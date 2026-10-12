@@ -1,0 +1,52 @@
+schemaVersion: 0.1.0
+id: public_api_demo
+name: Public API Demo
+description: Example read-only HTTP API connector manifest.
+version: 0.1.0
+status: draft
+adapter:
+  type: api
+  baseUrl: https://api.example.com
+auth:
+  type: none
+policy:
+  defaultApproval: onRisk
+  allowedDomains:
+    - api.example.com
+  timeoutMs: 15000
+  maxOutputBytes: 262144
+tools:
+  - name: get_status
+    title: Get Service Status
+    description: Read public service status from the API. This example is read-only and does not require credentials.
+    inputSchema:
+      type: object
+      additionalProperties: false
+      properties: {}
+    outputSchema:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+        checkedAt:
+          type: string
+          format: date-time
+      required:
+        - status
+        - checkedAt
+    risk:
+      level: low
+      readOnly: true
+      destructive: false
+      idempotent: true
+      external: true
+      requiresApproval: false
+      dataSensitivity: public
+    operation:
+      type: http
+      method: GET
+      path: /status
+      responseMap:
+        status: $.status
+        checkedAt: $.checked_at
