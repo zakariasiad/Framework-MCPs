@@ -1,0 +1,92 @@
+schemaVersion: 0.1.0
+id: local_data_demo
+name: Local Data Demo
+description: Example connector for safe file reads and allowlisted database query templates.
+version: 0.1.0
+status: draft
+adapter:
+  type: file
+  workspaceRoots:
+    - ./examples/data
+auth:
+  type: none
+policy:
+  defaultApproval: onRisk
+  timeoutMs: 10000
+  maxOutputBytes: 262144
+tools:
+  - name: read_csv_rows
+    title: Read CSV Rows
+    description: Reads rows from an allowlisted CSV file under the configured workspace root.
+    inputSchema:
+      type: object
+      additionalProperties: false
+      properties:
+        file:
+          type: string
+          pattern: '^[A-Za-z0-9_.-]+\\.csv$'
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 25
+      required:
+        - file
+    outputSchema:
+      type: object
+      additionalProperties: false
+      properties:
+        rows:
+          type: array
+          items:
+            type: object
+        truncated:
+          type: boolean
+      required:
+        - rows
+        - truncated
+    risk:
+      level: low
+      readOnly: true
+      destructive: false
+      idempotent: true
+      external: false
+      requiresApproval: false
+      dataSensitivity: low
+    operation:
+      type: fileRead
+      format: csv
+      pathFrom: file
+      limitFrom: limit
+
+  - name: query_customer_report
+    title: Query Customer Report
+    description: Runs an allowlisted read-only SQL query template against a reporting database connection.
+    inputSchema:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum:
+            - active
+            - inactive
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 25
+      required:
+        - status
+    risk:
+      level: medium
+      readOnly: true
+      destructive: false
+      idempotent: true
+      external: false
+      requiresApproval: false
+      dataSensitivity: internal
+    operation:
+      type: sqlTemplate
+      connectionRef: REPORTING_DB_URL
+      template: SELECT id, name, status FROM customers WHERE status = :status LIMIT :limit
