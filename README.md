@@ -71,11 +71,13 @@ The first MVP should prove the framework with a small but complete vertical slic
 .
 ├── docs/
 │   ├── ARCHITECTURE.md
+│   ├── AUTH_SECRETS.md
 │   ├── CONNECTOR_TYPES.md
 │   ├── FEASIBILITY.md
 │   ├── MVP.md
 │   ├── RUNTIME_DEPLOYMENT.md
 │   ├── SECURITY_MODEL.md
+│   ├── TESTING.md
 │   └── TOOL_SCHEMA_GENERATION.md
 ├── examples/
 │   └── connectors/
@@ -93,7 +95,9 @@ The first MVP should prove the framework with a small but complete vertical slic
 - [MVP Plan](docs/MVP.md)
 - [Connector Types](docs/CONNECTOR_TYPES.md)
 - [Tool Schema Generation](docs/TOOL_SCHEMA_GENERATION.md)
+- [Authentication and Secrets](docs/AUTH_SECRETS.md)
 - [Security Model](docs/SECURITY_MODEL.md)
+- [Testing Strategy](docs/TESTING.md)
 - [Runtime and Deployment](docs/RUNTIME_DEPLOYMENT.md)
 - [Feasibility and Limitations](docs/FEASIBILITY.md)
 
