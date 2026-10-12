@@ -1,0 +1,222 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://framework-mcps.dev/schemas/connector.manifest.schema.json",
+  "title": "Framework-MCPs Connector Manifest",
+  "description": "Declarative manifest for generating MCP tools from API, browser, CLI, database, or file adapters.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "name", "version", "adapter", "tools"],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "description": "Manifest schema version.",
+      "pattern": "^0\\.1\\.[0-9]+$"
+    },
+    "id": {
+      "type": "string",
+      "description": "Stable connector identifier used as a tool namespace.",
+      "pattern": "^[a-z][a-z0-9_\\-]{1,63}$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "reviewed", "enabled", "disabled"],
+      "default": "draft"
+    },
+    "adapter": {
+      "$ref": "#/$defs/adapter"
+    },
+    "auth": {
+      "$ref": "#/$defs/auth"
+    },
+    "policy": {
+      "$ref": "#/$defs/policy"
+    },
+    "tools": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/tool"
+      }
+    }
+  },
+  "$defs": {
+    "adapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["api", "browser", "cli", "database", "file"]
+        },
+        "baseUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "command": {
+          "type": "string"
+        },
+        "workingDirectory": {
+          "type": "string"
+        },
+        "connectionRef": {
+          "type": "string"
+        },
+        "workspaceRoots": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "options": {
+          "type": "object"
+        }
+      }
+    },
+    "auth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["none", "apiKey", "bearerToken", "oauth2", "browserSession", "databaseConnection", "environment"]
+        },
+        "secretRef": {
+          "type": "string",
+          "description": "Reference to a secret provider entry, not the secret value."
+        },
+        "scopes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "defaultApproval": {
+          "type": "string",
+          "enum": ["never", "onRisk", "always"],
+          "default": "onRisk"
+        },
+        "allowedDomains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "blockedDomains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "maxOutputBytes": {
+          "type": "integer",
+          "minimum": 1024,
+          "default": 1048576
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1000,
+          "default": 30000
+        }
+      }
+    },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "title", "description", "inputSchema", "risk", "operation"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Tool name without connector prefix.",
+          "pattern": "^[A-Za-z0-9_.-]{1,128}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "inputSchema": {
+          "type": "object",
+          "description": "JSON Schema object for tool arguments."
+        },
+        "outputSchema": {
+          "type": "object",
+          "description": "Optional JSON Schema for structured output."
+        },
+        "risk": {
+          "$ref": "#/$defs/risk"
+        },
+        "operation": {
+          "$ref": "#/$defs/operation"
+        }
+      }
+    },
+    "risk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["level", "readOnly", "destructive", "idempotent", "external", "requiresApproval"],
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"]
+        },
+        "readOnly": {
+          "type": "boolean"
+        },
+        "destructive": {
+          "type": "boolean"
+        },
+        "idempotent": {
+          "type": "boolean"
+        },
+        "external": {
+          "type": "boolean"
+        },
+        "requiresApproval": {
+          "type": "boolean"
+        },
+        "dataSensitivity": {
+          "type": "string",
+          "enum": ["public", "low", "internal", "confidential", "secret"],
+          "default": "low"
+        }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["http", "browserWorkflow", "command", "sqlTemplate", "fileRead", "fileWrite"]
+        }
+      }
+    }
+  }
+}
