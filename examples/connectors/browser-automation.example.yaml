@@ -1,0 +1,108 @@
+schemaVersion: 0.1.0
+id: browser_portal_demo
+name: Browser Portal Demo
+description: Example browser automation connector for a user-authorized web portal.
+version: 0.1.0
+status: draft
+adapter:
+  type: browser
+  baseUrl: https://portal.example.com
+  options:
+    browser: chromium
+    headless: true
+auth:
+  type: browserSession
+  secretRef: user-managed-browser-session
+policy:
+  defaultApproval: onRisk
+  allowedDomains:
+    - portal.example.com
+  timeoutMs: 30000
+  maxOutputBytes: 524288
+tools:
+  - name: read_dashboard_summary
+    title: Read Dashboard Summary
+    description: Opens the dashboard page and extracts visible summary metrics that the authenticated user can access.
+    inputSchema:
+      type: object
+      additionalProperties: false
+      properties: {}
+    outputSchema:
+      type: object
+      additionalProperties: false
+      properties:
+        metrics:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              label:
+                type: string
+              value:
+                type: string
+            required:
+              - label
+              - value
+      required:
+        - metrics
+    risk:
+      level: medium
+      readOnly: true
+      destructive: false
+      idempotent: true
+      external: true
+      requiresApproval: false
+      dataSensitivity: internal
+    operation:
+      type: browserWorkflow
+      startUrl: /dashboard
+      steps:
+        - action: waitForSelector
+          selector: '[data-testid="dashboard-summary"]'
+        - action: extractList
+          selector: '[data-testid="dashboard-summary"] [data-testid="metric"]'
+          fields:
+            label: '[data-testid="metric-label"]'
+            value: '[data-testid="metric-value"]'
+
+  - name: submit_request
+    title: Submit Request
+    description: Fills and submits a request form. This is a side-effecting browser workflow and must require user approval.
+    inputSchema:
+      type: object
+      additionalProperties: false
+      properties:
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 120
+        message:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required:
+        - subject
+        - message
+    risk:
+      level: high
+      readOnly: false
+      destructive: false
+      idempotent: false
+      external: true
+      requiresApproval: true
+      dataSensitivity: internal
+    operation:
+      type: browserWorkflow
+      startUrl: /requests/new
+      approvalBefore:
+        - click
+      steps:
+        - action: fill
+          selector: '[name="subject"]'
+          valueFrom: subject
+        - action: fill
+          selector: '[name="message"]'
+          valueFrom: message
+        - action: click
+          selector: '[type="submit"]'
