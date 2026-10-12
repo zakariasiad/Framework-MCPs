@@ -1,0 +1,48 @@
+{
+  "name": "framework-mcps",
+  "version": "0.1.0",
+  "description": "Manifest-driven framework for building safe MCP connectors for APIs, browsers, CLIs, databases, and files.",
+  "type": "module",
+  "license": "MIT",
+  "private": false,
+  "bin": {
+    "fmcp": "./dist/src/cli.js"
+  },
+  "files": [
+    "dist",
+    "schemas",
+    "examples",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/cli.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "validate:examples": "tsx src/tools/validate-examples.ts"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "connectors",
+    "automation",
+    "playwright",
+    "openapi"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.0.0",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "yaml": "^2.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=20.11.0"
+  }
+}
