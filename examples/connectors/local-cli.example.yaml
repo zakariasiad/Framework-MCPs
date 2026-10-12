@@ -1,0 +1,56 @@
+schemaVersion: 0.1.0
+id: local_cli_demo
+name: Local CLI Demo
+description: Example connector that wraps a safe local command with explicit argument validation.
+version: 0.1.0
+status: draft
+adapter:
+  type: cli
+  command: node
+  workingDirectory: ./examples/fixtures/cli
+auth:
+  type: none
+policy:
+  defaultApproval: onRisk
+  timeoutMs: 10000
+  maxOutputBytes: 131072
+tools:
+  - name: count_words
+    title: Count Words
+    description: Counts words in an allowlisted local text file. The runtime must resolve the path under the configured working directory.
+    inputSchema:
+      type: object
+      additionalProperties: false
+      properties:
+        file:
+          type: string
+          pattern: '^[A-Za-z0-9_.-]+\\.txt$'
+      required:
+        - file
+    outputSchema:
+      type: object
+      additionalProperties: false
+      properties:
+        file:
+          type: string
+        words:
+          type: integer
+          minimum: 0
+      required:
+        - file
+        - words
+    risk:
+      level: low
+      readOnly: true
+      destructive: false
+      idempotent: true
+      external: false
+      requiresApproval: false
+      dataSensitivity: low
+    operation:
+      type: command
+      executable: node
+      args:
+        - ./count-words.js
+        - '${file}'
+      allowShell: false
