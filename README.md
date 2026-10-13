@@ -114,16 +114,16 @@ See [Security Model](docs/SECURITY_MODEL.md) and [Authentication and Secrets](do
 - [x] Register tools deterministically.
 - [x] Run a real MCP server with a read-only HTTP API connector.
 - [x] Add automated tests, CI, and setup instructions.
-- [ ] Add a full MCP client integration smoke test.
+- [x] Add full MCP client integration smoke tests for API and file connectors.
 
 ### Phase 2 — Make the core reliable
-- Enforce input validation and runtime policy.
+- [x] Enforce input-schema validation and read-only runtime policy.
 - [x] Resolve environment-backed API keys and bearer tokens outside model-visible arguments.
 - [x] Redact known credential strings from upstream response text.
 - [ ] Expand secret providers, per-user credential isolation, and audited credential lifecycle management.
 - [x] Add bounded outputs, timeouts, and structured runtime errors.
 - [ ] Add a formal audit-event sink.
-- Test positive and negative security cases.
+- [x] Test positive and negative API/file security cases.
 
 ### Phase 3 — Generate connectors
 - [x] Import a useful subset of OpenAPI 3.x.
