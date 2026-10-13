@@ -43,6 +43,21 @@ describe("OpenAPI connector generation", () => {
     })).toThrow(/must be HTTPS/);
   });
 
+  it("omits secured operations from the unauthenticated runtime draft", () => {
+    const generated = generateManifestFromOpenApi({
+      openapi: "3.0.3",
+      info: { title: "Secured API", version: "1.0.0" },
+      servers: [{ url: "https://example.com" }],
+      security: [{ bearerAuth: [] }],
+      paths: {
+        "/private": { get: { operationId: "privateData", responses: { "200": { description: "ok" } } },
+          "/public": { get: { operationId: "publicData", security: [], responses: { "200": { description: "ok" } } } }
+      }
+    });
+    expect(generated.manifest.tools.map((tool) => tool.name)).toEqual(["publicdata"]);
+    expect(generated.warnings.some((warning) => warning.includes("authenticated GET /private"))).toBe(true);
+  });
+
   it("rejects documents without supported GET operations", () => {
     expect(() => generateManifestFromOpenApi({
       openapi: "3.0.3",
