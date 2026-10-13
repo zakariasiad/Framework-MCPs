@@ -99,19 +99,6 @@ function operationName(operation: JsonObject, method: string, path: string): str
   return slug(source, "get_resource");
 }
 
-function inferAuth(root: JsonObject): ConnectorManifest["auth"] {
-  const components = object(root.components);
-  const schemes = object(components?.securitySchemes);
-  if (!schemes || Object.keys(schemes).length === 0) return { type: "none" };
-  for (const value of Object.values(schemes)) {
-    const scheme = object(value);
-    if (!scheme) continue;
-    if (scheme.type === "http" && scheme.scheme === "bearer") return { type: "bearerToken" };
-    if (scheme.type === "apiKey") return { type: "apiKey" };
-    if (scheme.type === "oauth2" || scheme.type === "openIdConnect") return { type: "oauth2" };
-  }
-  return { type: "environment" };
-}
 
 export function generateManifestFromOpenApi(
   input: unknown,
@@ -236,7 +223,7 @@ export function generateManifestFromOpenApi(
     version: options.version ?? (infoVersion && /^\d+\.\d+\.\d+$/.test(infoVersion) ? infoVersion : "0.1.0"),
     status: "draft",
     adapter: { type: "api", baseUrl: baseUrl.toString().replace(/\/$/, "") },
-    auth: inferAuth(root),
+    auth: { type: "none" },
     policy: {
       defaultApproval: "onRisk",
       allowedDomains: [baseUrl.hostname],
