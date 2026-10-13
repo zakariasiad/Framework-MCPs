@@ -526,8 +526,22 @@ export async function executeFileSearch(
   return output;
 }
 
+export function assertConnectorCanServe(manifest: ConnectorManifest): void {
+  if (manifest.status === "disabled") {
+    throw new Error("This connector is disabled by manifest status and cannot be served.");
+  }
+  const names = new Set<string>();
+  for (const tool of manifest.tools) {
+    if (names.has(tool.name)) {
+      throw new Error(`Duplicate tool name "${tool.name}" would create an ambiguous MCP tool registration.`);
+    }
+    names.add(tool.name);
+  }
+}
+
 export async function startStdioServer(manifestPath: string): Promise<void> {
   const manifest = await loadAndValidateManifest(manifestPath);
+  assertConnectorCanServe(manifest);
   // Refuse to publish tools whose policy or argument schema is not executable and safe.
   for (const tool of manifest.tools) assertExecutableTool(manifest, tool);
   const server = new Server(
