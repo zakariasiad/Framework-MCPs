@@ -69,10 +69,13 @@ export function resolveApiUrl(
 
   const allowedDomains = manifest.policy?.allowedDomains;
   const blockedDomains = manifest.policy?.blockedDomains ?? [];
+  if (!allowedDomains || allowedDomains.length === 0) {
+    throw new Error("policy.allowedDomains must contain at least one explicitly approved API host.");
+  }
   if (isBlockedDomain(baseUrl.hostname, blockedDomains)) {
     throw new Error(`API host "${baseUrl.hostname}" is blocked by connector policy.`);
   }
-  if (allowedDomains && allowedDomains.length > 0 && !allowedDomains.includes(baseUrl.hostname)) {
+  if (!allowedDomains.includes(baseUrl.hostname)) {
     throw new Error(`API host "${baseUrl.hostname}" is not in policy.allowedDomains.`);
   }
 
