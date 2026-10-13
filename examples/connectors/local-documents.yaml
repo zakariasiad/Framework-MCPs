@@ -1,0 +1,33 @@
+schemaVersion: "0.1.0"
+id: local_documents
+name: Local Documents Demo
+description: Read the sample lesson document from an explicitly configured workspace.
+version: "0.1.0"
+status: reviewed
+adapter:
+  type: file
+  workspaceRoots:
+    - examples/workspace
+policy:
+  defaultApproval: onRisk
+  maxOutputBytes: 8192
+  timeoutMs: 10000
+tools:
+  - name: read_lesson
+    title: Read sample lesson
+    description: Read the included Markdown lesson from the example workspace.
+    inputSchema:
+      type: object
+      properties: {}
+      additionalProperties: false
+    risk:
+      level: low
+      readOnly: true
+      destructive: false
+      idempotent: true
+      external: false
+      requiresApproval: false
+      dataSensitivity: public
+    operation:
+      type: fileRead
+      path: lesson.md
