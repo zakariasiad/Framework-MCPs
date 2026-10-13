@@ -81,6 +81,9 @@ export function assertExecutableReadOnlyApiTool(manifest: ConnectorManifest, too
 
 export function assertExecutableReadOnlyFileTool(manifest: ConnectorManifest, tool: ConnectorTool): void {
   if (manifest.adapter.type !== "file") throw new Error("This runtime supports only API and file connectors.");
+  if (manifest.auth && manifest.auth.type !== "none") {
+    throw new Error("File connectors do not support authentication in this runtime.");
+  }
   if (tool.operation.type !== "fileRead") throw new Error("File connectors support only fileRead operations.");
   if (!tool.risk.readOnly || tool.risk.destructive || tool.risk.requiresApproval) {
     throw new Error("This file tool is not eligible for automatic execution.");
@@ -149,7 +152,11 @@ export async function executeFileRead(
       const info = await stat(target);
       if (!info.isFile()) continue;
       if (info.size > maxBytes) throw new Error(`File exceeds the configured ${maxBytes}-byte output limit.`);
-      return await readFile(target, "utf8");
+      const content = await readFile(target, "utf8");
+      if (Buffer.byteLength(content, "utf8") > maxBytes) {
+        throw new Error(`File exceeds the configured ${maxBytes}-byte output limit.`);
+      }
+      return content;
     } catch (error) {
       if (error instanceof Error && error.message.startsWith("File exceeds the configured")) throw error;
       // Try the next explicitly configured root without exposing local paths.
