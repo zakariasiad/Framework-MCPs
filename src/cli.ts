@@ -1,5 +1,8 @@
 #!/usr/bin/env node
-import { loadAndValidateManifest } from "./manifest.js";
+import { readFile, writeFile } from "node:fs/promises";
+import { stringify as stringifyYaml } from "yaml";
+import { generateManifestFromOpenApi } from "./openapi.js";
+import { loadAndValidateManifest, parseManifestText, validateManifest } from "./manifest.js";
 import { startStdioServer } from "./runtime.js";
 
 function usage(): void {
@@ -19,12 +22,12 @@ Commands:
 }
 
 async function main(): Promise<void> {
-  const [command, file] = process.argv.slice(2);
+  const [command, file, outputFile] = process.argv.slice(2);
   if (!command || command === "--help" || command === "-h" || command === "help") {
     usage();
     return;
   }
-  if (!["validate", "list-tools", "serve"].includes(command)) {
+  if (!["validate", "list-tools", "serve", "import-openapi"].includes(command)) {
     console.error(`Unknown command: ${command}\n`);
     usage();
     process.exitCode = 2;
