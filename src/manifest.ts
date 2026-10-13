@@ -2,8 +2,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import Ajv2020 from "ajv/dist/2020.js";
-import addFormats from "ajv-formats";
+import { createRequire } from "node:module";
 import { parse as parseYaml } from "yaml";
 
 export type ConnectorManifest = {
@@ -61,6 +60,14 @@ export function loadManifestSchema(): Record<string, unknown> {
 }
 
 
+const require = createRequire(import.meta.url);
+type SchemaError = { instancePath?: string; message?: string };
+type SchemaValidator = ((value: unknown) => boolean) & { errors?: SchemaError[] };
+type AjvConstructor = new (options: { allErrors: boolean; strict: boolean }) => {
+  compile(schema: Record<string, unknown>): SchemaValidator;
+};
+const Ajv2020 = require("ajv/dist/2020.js") as AjvConstructor;
+const addFormats = require("ajv-formats") as (ajv: InstanceType<typeof Ajv2020>) => void;
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 addFormats(ajv);
 const validateSchema = ajv.compile(loadManifestSchema());
