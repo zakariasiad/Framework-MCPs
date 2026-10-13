@@ -123,4 +123,5 @@ describe("read-only API runtime policy", () => {
     const unsupported = { ...manifest, auth: { type: "oauth2", secretRef: "env:API_TOKEN" } };
     expect(() => assertExecutableReadOnlyApiTool(unsupported, manifest.tools[0]!))
       .toThrow(/only none, apiKey, and bearerToken/);
-  });});
+  });
+});
