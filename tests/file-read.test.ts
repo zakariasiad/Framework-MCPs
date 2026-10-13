@@ -64,6 +64,19 @@ describe("file-read adapter", () => {
       .rejects.toThrow(/not found within the configured workspace roots/);
   });
 
+  it("fails closed for authenticated file connectors and missing workspace roots", async () => {
+    const root = await makeRoot();
+    const authenticated = await fixture(root, "lesson.md");
+    authenticated.auth = { type: "bearerToken", secretRef: "env:FILE_TOKEN" };
+    await expect(executeFileRead(authenticated, authenticated.tools[0]!, {}))
+      .rejects.toThrow(/do not support authentication/);
+
+    const noRoots = await fixture(root, "lesson.md");
+    noRoots.adapter = { type: "file", workspaceRoots: [] };
+    await expect(executeFileRead(noRoots, noRoots.tools[0]!, {}))
+      .rejects.toThrow(/at least one configured workspace root/);
+  });
+
   it("blocks unsupported extensions and files over the configured limit", async () => {
     const root = await makeRoot();
     await writeFile(join(root, "payload.bin"), "data", "utf8");
