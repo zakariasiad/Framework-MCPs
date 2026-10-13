@@ -74,8 +74,11 @@ function toJsonSchema(value: unknown, root: JsonObject): JsonObject {
   const result: JsonObject = {};
   for (const [key, item] of Object.entries(resolved)) {
     if (!allowed.has(key)) continue;
-    if (key === "properties" && object(item)) {
-      result.properties = Object.fromEntries(Object.entries(item).map(([name, schema]) => [name, toJsonSchema(schema, root)]));
+    if (key === "properties") {
+      const propertyMap = object(item);
+      if (propertyMap) {
+        result.properties = Object.fromEntries(Object.entries(propertyMap).map(([name, schema]) => [name, toJsonSchema(schema, root)]));
+      }
     } else if (key === "items" || key === "additionalProperties") {
       result[key] = typeof item === "boolean" ? item : toJsonSchema(item, root);
     } else if (["oneOf", "anyOf", "allOf"].includes(key) && Array.isArray(item)) {
