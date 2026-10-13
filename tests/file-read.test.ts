@@ -46,6 +46,23 @@ describe("file-read adapter", () => {
     await expect(executeFileRead(manifest, manifest.tools[0]!, {})).resolves.toBe("lesson content");
   });
 
+  it("resolves safe file path parameters and blocks traversal values", async () => {
+    const root = await makeRoot();
+    await mkdir(join(root, "docs"));
+    await writeFile(join(root, "docs", "intro.md"), "parameterized content", "utf8");
+    const manifest = await fixture(root, "docs/{filename}.md");
+    manifest.tools[0]!.inputSchema = {
+      type: "object",
+      properties: { filename: { type: "string" } },
+      required: ["filename"],
+      additionalProperties: false,
+    };
+    await expect(executeFileRead(manifest, manifest.tools[0]!, { filename: "intro" }))
+      .resolves.toBe("parameterized content");
+    await expect(executeFileRead(manifest, manifest.tools[0]!, { filename: "../outside" }))
+      .rejects.toThrow(/Unsafe file path parameter/);
+  });
+
   it("blocks parent-directory traversal and hidden files", async () => {
     const root = await makeRoot();
     const traversal = await fixture(root, "../outside.txt");
