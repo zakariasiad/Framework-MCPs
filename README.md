@@ -134,7 +134,30 @@ These phases are priorities, not a promise that all features are currently imple
 
 ## Getting started
 
-At this stage, begin by reviewing the schema, examples, and design documents:
+Requirements: Node.js 20.11 or newer and npm.
+
+Clone the repository, install dependencies, and run the manifest tools:
+
+```bash
+git clone https://github.com/zakariasiad/Framework-MCPs.git
+cd Framework-MCPs
+npm install
+npm run typecheck
+npm test
+npm run validate:examples
+npm run build
+```
+
+The initial CLI supports manifest validation and listing declared tools:
+
+```bash
+npm run dev -- validate examples/connectors/public-http-api.yaml
+npm run dev -- list-tools examples/connectors/public-http-api.yaml
+```
+
+The CLI validates connector definitions; it does **not yet execute API calls or host a complete MCP server**. Do not put real credentials in example manifests.
+
+At this stage, also review the schema, examples, and design documents:
 
 1. Read [Architecture](docs/ARCHITECTURE.md).
 2. Review the [connector manifest schema](schemas/connector.manifest.schema.json).
@@ -142,7 +165,7 @@ At this stage, begin by reviewing the schema, examples, and design documents:
 4. Follow the [MVP plan](docs/MVP.md).
 5. Read the [contribution guide](CONTRIBUTING.md).
 
-The package scripts describe the intended TypeScript development workflow, but do not assume the runtime is ready to execute until the source files, dependency installation, build, and tests have been verified. Setup and usage commands should be documented once the first end-to-end path is operational.
+The manifest validation CLI is the first implementation slice. API execution and a live MCP runtime remain planned work; successful manifest validation alone does not mean a connector is executable.
 
 ## Development principles
 
