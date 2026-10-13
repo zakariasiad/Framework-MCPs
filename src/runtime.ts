@@ -20,6 +20,25 @@ const require = createRequire(import.meta.url);
 const Ajv2020 = require("ajv/dist/2020.js") as AjvConstructor;
 const ajvFormats = require("ajv-formats") as (ajv: InstanceType<typeof Ajv2020>) => void;
 
+function compileJsonSchema(schema: Record<string, unknown>): JsonSchemaValidator {
+  const ajv = new Ajv2020({ allErrors: true, strict: false });
+  ajvFormats(ajv);
+  return ajv.compile(schema);
+}
+
+export function validateToolOutput(schema: Record<string, unknown>, value: unknown): string | undefined {
+  let validator: JsonSchemaValidator;
+  try {
+    validator = compileJsonSchema(schema);
+  } catch (error) {
+    throw new Error(`Invalid tool outputSchema: ${error instanceof Error ? error.message : "schema compilation failed"}`);
+  }
+  if (validator(value)) return undefined;
+  return (validator.errors ?? [])
+    .map((error) => `${error.instancePath || "/"}: ${error.message ?? "invalid value"}`)
+    .join("; ");
+}
+
 function validateArguments(schema: Record<string, unknown>, value: unknown): string | undefined {
   const ajv = new Ajv2020({ allErrors: true, strict: false });
   ajvFormats(ajv);
@@ -559,8 +578,22 @@ export async function startStdioServer(manifestPath: string): Promise<void> {
           ? await executeFileSearch(manifest, tool, args)
           : await executeFileRead(manifest, tool, args)
         : await executeApiGet(manifest, tool, args);
+      let structuredResult: unknown = result;
+      if (tool.outputSchema && typeof structuredResult === "string") {
+        try { structuredResult = JSON.parse(structuredResult) as unknown; }
+        catch { throw new Error("Tool output does not match its declared object outputSchema: result is not valid JSON."); }
+      }
+      if (tool.outputSchema) {
+        const outputError = validateToolOutput(tool.outputSchema, structuredResult);
+        if (outputError) throw new Error(`Tool output failed outputSchema validation: ${outputError}`);
+        if (!objectRecord(structuredResult)) {
+          throw new Error("Tool outputSchema requires a JSON object result.");
+        }
+      }
+      const textContent = typeof result === "string" ? result : JSON.stringify(result, null, 2);
       return {
-        content: [{ type: "text" as const, text: typeof result === "string" ? result : JSON.stringify(result, null, 2) }],
+        content: [{ type: "text" as const, text: textContent }],
+        ...(tool.outputSchema ? { structuredContent: structuredResult as Record<string, unknown> } : {}),
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : "Tool execution failed.";
