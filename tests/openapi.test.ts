@@ -50,8 +50,8 @@ describe("OpenAPI connector generation", () => {
       servers: [{ url: "https://example.com" }],
       security: [{ bearerAuth: [] }],
       paths: {
-        "/private": { get: { operationId: "privateData", responses: { "200": { description: "ok" } } },
-          "/public": { get: { operationId: "publicData", security: [], responses: { "200": { description: "ok" } } } }
+        "/private": { get: { operationId: "privateData", responses: { "200": { description: "ok" } } } },
+        "/public": { get: { operationId: "publicData", security: [], responses: { "200": { description: "ok" } } } }
       }
     });
     expect(generated.manifest.tools.map((tool) => tool.name)).toEqual(["publicdata"]);
