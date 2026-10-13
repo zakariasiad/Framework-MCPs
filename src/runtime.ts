@@ -204,6 +204,8 @@ export async function executeApiGet(
 
 export async function startStdioServer(manifestPath: string): Promise<void> {
   const manifest = await loadAndValidateManifest(manifestPath);
+  // Refuse to publish tools whose policy or argument schema is not executable and safe.
+  for (const tool of manifest.tools) assertExecutableReadOnlyApiTool(manifest, tool);
   const server = new Server(
     { name: "framework-mcps", version: "0.1.0" },
     { capabilities: { tools: {} } },
