@@ -162,12 +162,13 @@ Current implementation:
 
 - Reads a manifest-declared relative path under an explicitly configured workspace root.
 - Supports a limited allowlist of text-like extensions.
-- Blocks hidden paths and parent-directory traversal, checks resolved paths remain within the root, and enforces output-size limits.
+- Optional `operation.format: json` parses valid JSON; `operation.format: csv` maps CSV rows to objects using the first row as headers; the default is plain text.
+- CSV parsing rejects empty/duplicate headers, inconsistent row widths, unterminated quoted fields, and more than 5000 data rows.
+- Blocks hidden paths, common credential-named files, and parent-directory traversal, checks resolved paths remain within the root, and enforces output-size limits.
 
 Planned capabilities:
 
-- Parse structured formats.
-- Expose search, summarize, filter, and transform tools.
+- Expose controlled file search, summarize, filter, and transform tools.
 - Optionally write generated files to a safe output directory.
 
 Risks:
