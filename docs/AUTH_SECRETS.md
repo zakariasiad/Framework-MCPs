@@ -11,6 +11,10 @@ Framework-MCPs must support many authentication models without exposing secrets 
 - Make auth requirements visible before a tool is called.
 - Allow connectors to be developed without production credentials.
 
+## Current runtime support
+
+Only `none`, `apiKey`, and `bearerToken` are executable, and only for allowlisted HTTPS GET operations. Other auth types fail closed. Use the `env:` prefix explicitly; plain variable names are not accepted.
+
 ## Supported MVP auth types
 
 ### None
@@ -29,10 +33,10 @@ Use when a service requires a static API key.
 ```yaml
 auth:
   type: apiKey
-  secretRef: ACME_API_KEY
+  secretRef: env:ACME_API_KEY
 ```
 
-The runtime resolves `ACME_API_KEY` through the configured secret provider.
+The runtime resolves `env:VARIABLE_NAME` references from its process environment. API keys use the `x-api-key` header.
 
 ### Bearer token
 
@@ -41,7 +45,7 @@ Use for services where the user or deployment provides a bearer token.
 ```yaml
 auth:
   type: bearerToken
-  secretRef: ACME_BEARER_TOKEN
+  secretRef: env:ACME_BEARER_TOKEN
 ```
 
 ### OAuth 2.x
