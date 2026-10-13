@@ -1,0 +1,39 @@
+schemaVersion: "0.1.0"
+id: bearer_api_template
+name: Environment-backed Bearer API Template
+description: Example template for an authorized API that requires a bearer token.
+version: "0.1.0"
+status: draft
+adapter:
+  type: api
+  baseUrl: https://api.example.com
+auth:
+  type: bearerToken
+  secretRef: env:EXAMPLE_API_TOKEN
+policy:
+  defaultApproval: onRisk
+  allowedDomains:
+    - api.example.com
+  blockedDomains: []
+  timeoutMs: 10000
+  maxOutputBytes: 262144
+tools:
+  - name: get_profile
+    title: Get profile
+    description: Retrieve the authenticated user's profile from the configured API.
+    inputSchema:
+      type: object
+      properties: {}
+      additionalProperties: false
+    risk:
+      level: medium
+      readOnly: true
+      destructive: false
+      idempotent: true
+      external: true
+      requiresApproval: false
+      dataSensitivity: internal
+    operation:
+      type: http
+      method: GET
+      path: /v1/profile
