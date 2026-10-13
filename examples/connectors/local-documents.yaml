@@ -31,3 +31,31 @@ tools:
     operation:
       type: fileRead
       path: lesson.md
+
+  - name: search_lessons
+    title: Search local lessons
+    description: Search approved text files under the configured workspace for a phrase.
+    inputSchema:
+      type: object
+      properties:
+        query:
+          type: string
+          minLength: 1
+          maxLength: 200
+        maxResults:
+          type: integer
+          minimum: 1
+          maximum: 100
+      required:
+        - query
+      additionalProperties: false
+    risk:
+      level: low
+      readOnly: true
+      destructive: false
+      idempotent: true
+      external: false
+      requiresApproval: false
+      dataSensitivity: internal
+    operation:
+      type: fileSearch
