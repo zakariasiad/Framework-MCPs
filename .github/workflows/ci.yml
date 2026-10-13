@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "feat/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Typecheck, tests, and example validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm install
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Run unit tests
+        run: npm test
+      - name: Validate example manifests
+        run: npm run validate:examples
+      - name: Build
+        run: npm run build
