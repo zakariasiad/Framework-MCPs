@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { generateManifestFromOpenApi } from "../src/openapi.js";
+import { resolveApiUrl } from "../src/runtime.js";
 import { parseManifestText, validateManifest } from "../src/manifest.js";
 
 describe("OpenAPI connector generation", () => {
@@ -29,6 +30,8 @@ describe("OpenAPI connector generation", () => {
     });
     expect(generated.warnings.some((warning) => warning.includes("POST /items/{itemId}"))).toBe(true);
     expect(validateManifest(generated.manifest).valid).toBe(true);
+    const url = resolveApiUrl(generated.manifest, generated.manifest.tools[0]!, { itemId: "sku 42", locale: "fr" });
+    expect(url.toString()).toBe("https://catalog.example.com/v1/items/sku%2042?locale=fr");
   });
 
   it("rejects non-HTTPS server URLs", () => {
