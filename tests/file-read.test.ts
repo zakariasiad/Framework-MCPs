@@ -145,6 +145,24 @@ describe("file-read adapter", () => {
     expect(output.truncated).toBe(false);
   });
 
+  it("does not search through a symlinked directory outside the workspace", async () => {
+    const root = await makeRoot();
+    const external = await makeRoot();
+    await writeFile(join(external, "outside.md"), "confidential needle", "utf8");
+    await symlink(external, join(root, "linked-directory"), "dir");
+    const manifest = await fixture(root, "");
+    const tool = manifest.tools[0]!;
+    tool.inputSchema = {
+      type: "object",
+      properties: { query: { type: "string" } },
+      required: ["query"],
+      additionalProperties: false,
+    };
+    tool.operation = { type: "fileSearch", directory: "linked-directory" };
+    const output = JSON.parse(await executeFileSearch(manifest, tool, { query: "needle" })) as { matches: unknown[] };
+    expect(output.matches).toEqual([]);
+  });
+
   it("blocks traversal directories and invalid file search limits", async () => {
     const root = await makeRoot();
     const manifest = await fixture(root, "");
