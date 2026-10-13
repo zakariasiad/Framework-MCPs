@@ -433,6 +433,7 @@ export async function executeFileSearch(
     const walk = async (current: string): Promise<void> => {
       if (matches.length >= maxResults || filesVisited >= maxFiles || bytesScanned >= maxScanBytes) return;
       const entries = await readdir(current, { withFileTypes: true }).catch(() => []);
+      entries.sort((left, right) => left.name.localeCompare(right.name));
       for (const entry of entries) {
         if (matches.length >= maxResults || filesVisited >= maxFiles || bytesScanned >= maxScanBytes) return;
         if (entry.name.startsWith(".")) continue;
