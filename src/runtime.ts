@@ -34,6 +34,26 @@ function objectRecord(value: unknown): Record<string, unknown> | undefined {
     : undefined;
 }
 
+const CREDENTIAL_ARGUMENT_NAMES = new Set([
+  "apikey", "apitoken", "accesstoken", "refreshtoken", "bearertoken",
+  "authorization", "auth", "password", "passwd", "secret", "clientsecret",
+  "credential", "credentials", "cookie", "sessioncookie",
+]);
+
+function hasCredentialArgument(schema: unknown): boolean {
+  if (Array.isArray(schema)) return schema.some(hasCredentialArgument);
+  const record = objectRecord(schema);
+  if (!record) return false;
+  const properties = objectRecord(record.properties);
+  if (properties) {
+    for (const [name, propertySchema] of Object.entries(properties)) {
+      const normalized = name.toLowerCase().replace(/[-_]/g, "");
+      if (CREDENTIAL_ARGUMENT_NAMES.has(normalized) || hasCredentialArgument(propertySchema)) return true;
+    }
+  }
+  return ["items", "oneOf", "anyOf", "allOf"].some((key) => hasCredentialArgument(record[key]));
+}
+
 function isBlockedDomain(hostname: string, blocked: string[]): boolean {
   return blocked.some((domain) => hostname === domain || hostname.endsWith(`.${domain}`));
 }
@@ -45,6 +65,9 @@ export function assertExecutableReadOnlyApiTool(manifest: ConnectorManifest, too
   }
   if (manifest.auth && manifest.auth.type !== "none" && !manifest.auth.secretRef) {
     throw new Error("Authenticated connector requires a secretRef.");
+  }
+  if (hasCredentialArgument(tool.inputSchema)) {
+    throw new Error("Credential-like fields are not allowed in model-visible tool arguments; configure a runtime secretRef instead.");
   }
   if (tool.operation.type !== "http") throw new Error("This runtime supports only HTTP operations.");
   const method = String(tool.operation.method ?? "GET").toUpperCase();
