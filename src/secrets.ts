@@ -48,3 +48,9 @@ export function createAuthHeaders(
   if (auth.type === "bearerToken") return { authorization: `Bearer ${secret}` };
   return { "x-api-key": secret };
 }
+
+/** Redact known credential strings from text returned by an upstream service. */
+export function redactSecretValues(text: string, values: string[]): string {
+  const unique = [...new Set(values.filter((value) => value.length > 0))].sort((a, b) => b.length - a.length);
+  return unique.reduce((result, secret) => result.split(secret).join("[REDACTED]"), text);
+}
