@@ -117,7 +117,7 @@ export async function findManifestFiles(root: string): Promise<string[]> {
       if (entry.name === "node_modules" || entry.name === "dist" || entry.name.startsWith(".")) continue;
       const path = join(directory, entry.name);
       if (entry.isDirectory()) await visit(path);
-      else if (entry.isFile() && /\.(json|ya?ml)$/i.test(entry.name) && path.replaceAll("\\", "/").includes("/examples/")) found.push(path);
+      else if (entry.isFile() && /\.(json|ya?ml)$/i.test(entry.name) && path.replaceAll("\\", "/").includes("/examples/connectors/")) found.push(path);
     }
   }
   await visit(resolve(root));
