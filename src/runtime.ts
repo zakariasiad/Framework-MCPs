@@ -84,7 +84,7 @@ export function resolveApiUrl(
       throw new Error(`Missing or invalid path parameter: ${key}`);
     }
     const segment = String(value);
-    if (segment === "." || segment === ".." || segment.includes("\\\\")) {
+    if (segment === "." || segment === ".." || segment.includes("\\")) {
       throw new Error(`Unsafe path parameter: ${key}`);
     }
     return encodeURIComponent(segment).replace(/\\./g, "%2E");
