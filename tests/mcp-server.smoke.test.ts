@@ -26,7 +26,7 @@ describe("MCP stdio smoke test", () => {
     await client.connect(transport);
 
     const result = await client.listTools();
-    expect(result.tools.map((tool) => tool.name)).toContain("public_http_demo.get_repo");
+    expect(result.tools.map((tool) => tool.name)).toContain("public_http_demo.get_public_repository");
     expect(result.tools.every((tool) => !JSON.stringify(tool.inputSchema).match(/access[_-]?token|api[_-]?key|password|secret/i))).toBe(true);
   }, 15000);
 });
