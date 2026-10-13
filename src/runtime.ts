@@ -27,6 +27,12 @@ function validateArguments(schema: Record<string, unknown>, value: unknown): str
     .join("; ");
 }
 
+function objectRecord(value: unknown): Record<string, unknown> | undefined {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : undefined;
+}
+
 function isBlockedDomain(hostname: string, blocked: string[]): boolean {
   return blocked.some((domain) => hostname === domain || hostname.endsWith(`.${domain}`));
 }
