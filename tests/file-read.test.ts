@@ -145,6 +145,25 @@ describe("file-read adapter", () => {
     expect(output.truncated).toBe(false);
   });
 
+  it("returns file search results in deterministic path order", async () => {
+    const root = await makeRoot();
+    await writeFile(join(root, "zeta.md"), "needle zeta", "utf8");
+    await writeFile(join(root, "alpha.md"), "needle alpha", "utf8");
+    const manifest = await fixture(root, "");
+    const tool = manifest.tools[0]!;
+    tool.inputSchema = {
+      type: "object",
+      properties: { query: { type: "string" } },
+      required: ["query"],
+      additionalProperties: false,
+    };
+    tool.operation = { type: "fileSearch" };
+    const output = JSON.parse(await executeFileSearch(manifest, tool, { query: "needle" })) as {
+      matches: Array<{ path: string }>;
+    };
+    expect(output.matches.map((match) => match.path)).toEqual(["alpha.md", "zeta.md"]);
+  });
+
   it("does not search through a symlinked directory outside the workspace", async () => {
     const root = await makeRoot();
     const external = await makeRoot();
