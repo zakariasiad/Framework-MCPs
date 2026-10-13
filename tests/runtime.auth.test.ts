@@ -2,13 +2,39 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseManifestText, validateManifest } from "../src/manifest.js";
-import { executeApiGet } from "../src/runtime.js";
+import { assertConnectorCanServe, executeApiGet } from "../src/runtime.js";
 
 const fixture = resolve(process.cwd(), "examples/connectors/public-http-api.yaml");
 
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
+});
+
+describe("connector serving guards", () => {
+  it("refuses connectors explicitly marked disabled", async () => {
+    const source = await readFile(fixture, "utf8");
+    const parsed = validateManifest(parseManifestText(source, fixture));
+    if (!parsed.valid) throw new Error("Test fixture manifest is invalid");
+    expect(() => assertConnectorCanServe({ ...parsed.manifest, status: "disabled" }))
+      .toThrow(/connector is disabled/);
+  });
+
+  it("refuses duplicate tool names before registering MCP tools", async () => {
+    const source = await readFile(fixture, "utf8");
+    const parsed = validateManifest(parseManifestText(source, fixture));
+    if (!parsed.valid) throw new Error("Test fixture manifest is invalid");
+    const duplicateTools = [...parsed.manifest.tools, { ...parsed.manifest.tools[0]! }];
+    expect(() => assertConnectorCanServe({ ...parsed.manifest, tools: duplicateTools }))
+      .toThrow(/Duplicate tool name/);
+  });
+
+  it("allows draft connectors for local development unless explicitly disabled", async () => {
+    const source = await readFile(fixture, "utf8");
+    const parsed = validateManifest(parseManifestText(source, fixture));
+    if (!parsed.valid) throw new Error("Test fixture manifest is invalid");
+    expect(() => assertConnectorCanServe({ ...parsed.manifest, status: "draft" })).not.toThrow();
+  });
 });
 
 describe("authenticated API runtime", () => {
