@@ -123,10 +123,10 @@ export function assertExecutableReadOnlyFileTool(manifest: ConnectorManifest, to
   if (format !== undefined && !["text", "json", "csv"].includes(String(format))) {
     throw new Error('File operation.format must be "text", "json", or "csv".');
   }
-  if (format === "json" && extname(tool.operation.path).toLowerCase() !== ".json") {
+  if (tool.operation.type === "fileRead" && format === "json" && typeof tool.operation.path === "string" && extname(tool.operation.path).toLowerCase() !== ".json") {
     throw new Error('JSON parsing requires a .json operation.path.');
   }
-  if (format === "csv" && extname(tool.operation.path).toLowerCase() !== ".csv") {
+  if (tool.operation.type === "fileRead" && format === "csv" && typeof tool.operation.path === "string" && extname(tool.operation.path).toLowerCase() !== ".csv") {
     throw new Error('CSV parsing requires a .csv operation.path.');
   }
 }
