@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ConnectorManifest } from "../src/manifest.js";
-import { executeFileRead } from "../src/runtime.js";
+import { executeFileRead, executeFileSearch } from "../src/runtime.js";
 
 let roots: string[] = [];
 
@@ -118,6 +118,47 @@ describe("file-read adapter", () => {
     const manifest = await fixture(root, "bad.csv");
     manifest.tools[0]!.operation.format = "csv";
     await expect(executeFileRead(manifest, manifest.tools[0]!, {})).rejects.toThrow(/expected 2/);
+  });
+
+  it("searches allowed text files and returns bounded line matches", async () => {
+    const root = await makeRoot();
+    await mkdir(join(root, "docs"));
+    await writeFile(join(root, "docs", "lesson.md"), "first line\nRobotics club project\nlast line\n", "utf8");
+    await writeFile(join(root, "credentials.json"), '{"query":"Robotics club project"}', "utf8");
+    const manifest = await fixture(root, "");
+    const tool = manifest.tools[0]!;
+    tool.inputSchema = {
+      type: "object",
+      properties: {
+        query: { type: "string", minLength: 1, maxLength: 200 },
+        maxResults: { type: "integer", minimum: 1, maximum: 100 },
+      },
+      required: ["query"],
+      additionalProperties: false,
+    };
+    tool.operation = { type: "fileSearch", directory: "docs" };
+    const output = JSON.parse(await executeFileSearch(manifest, tool, { query: "robotics" })) as {
+      matches: Array<{ path: string; line: number; snippet: string }>;
+      truncated: boolean;
+    };
+    expect(output.matches).toEqual([{ path: "docs/lesson.md", line: 2, snippet: "Robotics club project" }]);
+    expect(output.truncated).toBe(false);
+  });
+
+  it("blocks traversal directories and invalid file search limits", async () => {
+    const root = await makeRoot();
+    const manifest = await fixture(root, "");
+    const tool = manifest.tools[0]!;
+    tool.inputSchema = {
+      type: "object",
+      properties: { query: { type: "string" }, maxResults: { type: "integer", minimum: 1, maximum: 100 } },
+      required: ["query"],
+      additionalProperties: false,
+    };
+    tool.operation = { type: "fileSearch", directory: "../" };
+    await expect(executeFileSearch(manifest, tool, { query: "needle" })).rejects.toThrow(/parent or hidden directories/);
+    tool.operation = { type: "fileSearch" };
+    await expect(executeFileSearch(manifest, tool, { query: "needle", maxResults: 1000 })).rejects.toThrow(/between 1 and 100/);
   });
 
   it("blocks unsupported extensions and files over the configured limit", async () => {
