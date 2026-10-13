@@ -65,6 +65,24 @@ describe("connector manifest validation", () => {
     });
     expect(result.valid).toBe(false);
   });
+  it("permits read-only API connectors using environment-backed bearer tokens", async () => {
+    const manifest = await exampleManifest();
+    const authenticated = {
+      ...manifest,
+      auth: { type: "bearerToken", secretRef: "env:PUBLIC_API_TOKEN" },
+    };
+    const url = resolveApiUrl(authenticated, manifest.tools[0]!, { owner: "openai", repo: "sdk" });
+    expect(url.origin).toBe("https://api.github.com");
+    expect(() => assertExecutableReadOnlyApiTool(authenticated, manifest.tools[0]!)).not.toThrow();
+  });
+
+  it("still blocks unsupported authentication types", async () => {
+    const manifest = await exampleManifest();
+    const unsupported = { ...manifest, auth: { type: "oauth2", secretRef: "env:API_TOKEN" } };
+    expect(() => assertExecutableReadOnlyApiTool(unsupported, manifest.tools[0]!))
+      .toThrow(/only none, apiKey, and bearerToken/);
+  });
+
 });
 
 describe("read-only API runtime policy", () => {
