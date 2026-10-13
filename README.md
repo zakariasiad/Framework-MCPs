@@ -153,9 +153,10 @@ The initial CLI supports manifest validation and listing declared tools:
 ```bash
 npm run dev -- validate examples/connectors/public-http-api.yaml
 npm run dev -- list-tools examples/connectors/public-http-api.yaml
+npm run dev -- serve examples/connectors/public-http-api.yaml
 ```
 
-The CLI validates connector definitions; it does **not yet execute API calls or host a complete MCP server**. Do not put real credentials in example manifests.
+The first runtime slice can host a single manifest over MCP stdio and execute allowlisted HTTPS GET operations for API connectors with `auth.type: none`. Authenticated connectors, write operations, browser/CLI/database/file adapters, hosted HTTP transport, and a full approval UI are not implemented yet. Risky operations are blocked rather than silently executed. Do not put real credentials in example manifests.
 
 At this stage, also review the schema, examples, and design documents:
 
