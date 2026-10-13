@@ -118,6 +118,12 @@ describe("file-read adapter", () => {
     const manifest = await fixture(root, "bad.csv");
     manifest.tools[0]!.operation.format = "csv";
     await expect(executeFileRead(manifest, manifest.tools[0]!, {})).rejects.toThrow(/expected 2/);
+
+    await writeFile(join(root, "bad-quote.csv"), 'name,note\nAlice,"quoted"x\n', "utf8");
+    const malformedQuote = await fixture(root, "bad-quote.csv");
+    malformedQuote.tools[0]!.operation.format = "csv";
+    await expect(executeFileRead(malformedQuote, malformedQuote.tools[0]!, {}))
+      .rejects.toThrow(/unexpected characters after a quoted field/);
   });
 
   it("searches allowed text files and returns bounded line matches", async () => {
