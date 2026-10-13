@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
 import { stringify as stringifyYaml } from "yaml";
 import { generateManifestFromOpenApi } from "./openapi.js";
 import { loadAndValidateManifest, parseManifestText, validateManifest } from "./manifest.js";
@@ -54,6 +55,7 @@ async function main(): Promise<void> {
       }
       const yaml = stringifyYaml(generated.manifest);
       if (outputFile) {
+        await mkdir(dirname(resolve(outputFile)), { recursive: true });
         await writeFile(outputFile, yaml, "utf8");
         console.log(`Generated draft manifest: ${outputFile}`);
       } else {
