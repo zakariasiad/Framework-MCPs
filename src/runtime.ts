@@ -119,7 +119,7 @@ function resolveFileTemplate(template: string, args: Record<string, unknown>): s
     throw new Error("File paths must be relative to a configured workspace root.");
   }
   if (template.split(/[\\\\/]+/).includes("..")) throw new Error("File paths cannot contain parent-directory segments.");
-  const expanded = template.replace(/\\{([A-Za-z0-9_]+)\\}/g, (_match, key: string) => {
+  const expanded = template.replace(/\{([A-Za-z0-9_]+)\}/g, (_match, key: string) => {
     const value = args[key];
     if (typeof value !== "string" && typeof value !== "number") {
       throw new Error(`Missing or invalid file path parameter: ${key}`);
@@ -130,7 +130,7 @@ function resolveFileTemplate(template: string, args: Record<string, unknown>): s
     }
     return segment;
   });
-  if (/\\{[^}]+\\}/.test(expanded)) throw new Error("File path contains an unresolved parameter.");
+  if (/\{[^}]+\}/.test(expanded)) throw new Error("File path contains an unresolved parameter.");
   if (expanded.split(/[\\\\/]+/).some((segment) => segment.startsWith("."))) {
     throw new Error("Hidden files and directories are blocked by default.");
   }
