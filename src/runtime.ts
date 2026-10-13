@@ -307,7 +307,23 @@ export async function executeFileRead(
   throw new Error("Requested file was not found within the configured workspace roots.");
 }
 
+export function assertAutomaticExecutionAllowed(manifest: ConnectorManifest, tool: ConnectorTool): void {
+  const approvalPolicy = manifest.policy?.defaultApproval ?? "onRisk";
+  if (approvalPolicy === "always") {
+    throw new Error("Policy requires approval for every tool call, but an interactive approval workflow is not implemented; automatic execution is blocked.");
+  }
+  if (approvalPolicy === "onRisk" && (
+    tool.risk.requiresApproval ||
+    tool.risk.destructive ||
+    tool.risk.level === "high" ||
+    tool.risk.level === "critical"
+  )) {
+    throw new Error("Policy requires approval for this risk level, but an interactive approval workflow is not implemented; automatic execution is blocked.");
+  }
+}
+
 function assertExecutableTool(manifest: ConnectorManifest, tool: ConnectorTool): void {
+  assertAutomaticExecutionAllowed(manifest, tool);
   if (manifest.adapter.type === "api") {
     assertExecutableReadOnlyApiTool(manifest, tool);
     return;
