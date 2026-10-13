@@ -94,6 +94,7 @@ See [Security Model](docs/SECURITY_MODEL.md) and [Authentication and Secrets](do
 - `examples/openapi/sample-catalog.yaml` — OpenAPI generator fixture.
 - `examples/connectors/` — public API, bearer-token template, and local file connector examples.
 - `examples/workspace/lesson.md` — sample document used by the file connector demo.
+- Run the local file connector from the repository root so its configured workspace path resolves correctly.
 - `docs/ARCHITECTURE.md` — component boundaries and execution flow.
 - `docs/MVP.md` — phased MVP plan and acceptance criteria.
 - `docs/CONNECTOR_TYPES.md` — connector types and trade-offs.
