@@ -215,12 +215,13 @@ export function generateManifestFromOpenApi(
   if (tools.length === 0) throw new Error("No supported GET operations were found in this OpenAPI document.");
 
   const id = slug(options.id ?? stringValue(info.title) ?? "openapi_connector", "openapi_connector");
+  const infoVersion = stringValue(info.version);
   const manifest: ConnectorManifest = {
     schemaVersion: "0.1.0",
     id,
     name: (options.name ?? stringValue(info.title) ?? "OpenAPI Connector").slice(0, 120),
     description: stringValue(info.description) ?? "Generated from an OpenAPI 3.x document. Review before use.",
-    version: options.version ?? (stringValue(info.version) && /^\d+\.\d+\.\d+$/.test(info.version) ? info.version : "0.1.0"),
+    version: options.version ?? (infoVersion && /^\d+\.\d+\.\d+$/.test(infoVersion) ? infoVersion : "0.1.0"),
     status: "draft",
     adapter: { type: "api", baseUrl: baseUrl.toString().replace(/\/$/, "") },
     auth: inferAuth(root),
