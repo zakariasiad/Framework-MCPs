@@ -124,6 +124,10 @@ function resolveFileTemplate(template: string, args: Record<string, unknown>): s
   if (expanded.split(/[\\\\/]+/).some((segment) => segment.startsWith("."))) {
     throw new Error("Hidden files and directories are blocked by default.");
   }
+  const basename = expanded.split(/[\\/]+/).pop()?.toLowerCase() ?? "";
+  if (/^(credentials?|secrets?|passwords?|tokens?|api[-_]?keys?|service[-_]?account)(?:\..*)?$/.test(basename)) {
+    throw new Error("Files with credential-related names are blocked by default.");
+  }
   const extension = extname(expanded).toLowerCase();
   const allowedExtensions = new Set([".txt", ".md", ".json", ".csv", ".yaml", ".yml", ".xml", ".html", ".css", ".js", ".ts", ".py", ".ini", ".toml"]);
   if (!allowedExtensions.has(extension)) throw new Error("This file type is not enabled for reading.");
