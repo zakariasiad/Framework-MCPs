@@ -45,11 +45,12 @@ Success criteria:
 
 Deliverables:
 
-- REST request adapter.
-- Header, query, path, and body mapping.
-- OAuth bearer token and API key support.
-- Response mapping to structured content.
-- OpenAPI import prototype.
+- [x] Read-only REST GET adapter with path and query mapping.
+- [x] Environment-backed API key and bearer-token headers.
+- [x] Bounded response bodies, timeouts, redirect rejection, and known-secret redaction.
+- [x] OpenAPI import prototype for public GET operations.
+- [ ] Structured output-schema validation and request-body mapping.
+- [ ] OAuth authorization and token lifecycle.
 
 Success criteria:
 
@@ -94,10 +95,13 @@ Success criteria:
 
 Deliverables:
 
-- Read-only file adapter for JSON, CSV, text, and Markdown.
-- Optional write support behind policy approval.
-- SQL adapter using query templates, not arbitrary model-generated SQL by default.
-- Connection string secret handling.
+- [x] Restricted read-only file adapter for approved text-like extensions.
+- [x] Workspace-root enforcement, traversal and hidden-file blocking, real-path containment, and output limits.
+- [x] Structured CSV/JSON parsing with CSV row/header validation and a row cap.
+- [x] Controlled text search within workspace roots with file-count, byte-scan, result, and output limits.
+- [ ] Optional write support behind policy approval.
+- [ ] SQL adapter using query templates, not arbitrary model-generated SQL by default.
+- [ ] Database connection secret handling.
 
 Success criteria:
 
@@ -109,11 +113,13 @@ Success criteria:
 
 Deliverables:
 
-- Unit tests for manifest validation and schema generation.
-- Adapter contract tests.
-- Recorded HTTP tests.
-- Browser workflow tests against local fixtures.
-- Security tests for blocked commands, path traversal, secret leakage, and approval enforcement.
+- [x] Unit tests for manifest validation and OpenAPI generation.
+- [x] API auth, output redaction, allowlist, and path policy tests.
+- [x] File tests for traversal, hidden files, extensions, output limits, structured parsing, symlink containment, and bounded search.
+- [x] MCP stdio client smoke tests for API and file adapters.
+- [ ] Broader adapter contract tests and recorded HTTP tests.
+- [ ] Browser workflow tests against local fixtures.
+- [ ] Security tests for blocked commands and approval enforcement.
 
 Success criteria:
 

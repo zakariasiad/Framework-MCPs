@@ -1,5 +1,7 @@
 # Connector Types
 
+> **Current runtime status:** read-only HTTPS GET API connectors and a restricted local file-read adapter are implemented. Browser, CLI, database, write operations, and hosted transport remain design targets, not supported runtime features yet.
+
 Framework-MCPs supports multiple connector families because different systems expose different access surfaces. The framework should prefer the most stable and authorized surface available.
 
 ## Selection order
@@ -156,11 +158,18 @@ Best for:
 - Data transformation tasks.
 - Controlled file search.
 
-Capabilities:
+Current implementation:
 
-- Read allowlisted files or directories.
-- Parse structured formats.
-- Expose search, summarize, filter, and transform tools.
+- Reads a manifest-declared relative path under an explicitly configured workspace root.
+- Supports a limited allowlist of text-like extensions.
+- Optional `operation.format: json` parses valid JSON; `operation.format: csv` maps CSV rows to objects using the first row as headers; the default is plain text.
+- `fileSearch` searches matching lines in approved text-like files, with a result cap, 500-file cap, byte scan budget, bounded snippets, and relative paths.
+- CSV parsing rejects empty/duplicate headers, inconsistent row widths, unterminated quoted fields, and more than 5000 data rows.
+- Blocks hidden paths, common credential-named files, and parent-directory traversal, checks resolved paths remain within the root, and enforces output-size limits.
+
+Planned capabilities:
+
+- Expose controlled file search, summarize, filter, and transform tools.
 - Optionally write generated files to a safe output directory.
 
 Risks:

@@ -214,7 +214,7 @@
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["http", "browserWorkflow", "command", "sqlTemplate", "fileRead", "fileWrite"]
+          "enum": ["http", "browserWorkflow", "command", "sqlTemplate", "fileRead", "fileSearch", "fileWrite"]
         }
       }
     }

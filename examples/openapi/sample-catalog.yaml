@@ -1,0 +1,48 @@
+openapi: 3.0.3
+info:
+  title: Sample Catalog API
+  version: 1.2.3
+  description: A small read-only catalog API for generator tests.
+servers:
+  - url: https://catalog.example.com/v1
+paths:
+  /items/{itemId}:
+    parameters:
+      - name: itemId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getItem
+      summary: Get an item
+      parameters:
+        - name: locale
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [en, fr]
+      responses:
+        '200':
+          description: Item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+    post:
+      operationId: createItem
+      summary: Create an item
+      responses:
+        '201':
+          description: Created
+components:
+  schemas:
+    Item:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+      required: [id]

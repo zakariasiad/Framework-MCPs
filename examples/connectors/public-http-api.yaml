@@ -1,0 +1,51 @@
+schemaVersion: "0.1.0"
+id: public_http_demo
+name: Public HTTP API Demo
+description: A read-only example connector showing a simple public HTTP GET operation.
+version: "0.1.0"
+status: reviewed
+adapter:
+  type: api
+  baseUrl: https://api.github.com
+auth:
+  type: none
+policy:
+  defaultApproval: onRisk
+  allowedDomains:
+    - api.github.com
+  blockedDomains: []
+  maxOutputBytes: 262144
+  timeoutMs: 10000
+tools:
+  - name: get_public_repository
+    title: Get public repository metadata
+    description: Retrieve public metadata for a GitHub repository by owner and repository name.
+    inputSchema:
+      type: object
+      additionalProperties: false
+      required:
+        - owner
+        - repo
+      properties:
+        owner:
+          type: string
+          minLength: 1
+          maxLength: 100
+        repo:
+          type: string
+          minLength: 1
+          maxLength: 100
+    outputSchema:
+      type: object
+    risk:
+      level: low
+      readOnly: true
+      destructive: false
+      idempotent: true
+      external: true
+      requiresApproval: false
+      dataSensitivity: public
+    operation:
+      type: http
+      method: GET
+      path: /repos/{owner}/{repo}

@@ -1,5 +1,7 @@
 # Architecture
 
+> **Implementation status:** the current runtime supports read-only HTTPS GET API tools and a restricted local file-read adapter over MCP stdio. The browser, CLI, database, hosted HTTP, approval gateway, and broader policy components below describe the intended architecture and are not all implemented.
+
 Framework-MCPs is a manifest-driven framework for generating and running MCP connectors. It separates what a connector can do from how it does it, and separates execution from policy decisions.
 
 ## Design goals
@@ -106,11 +108,14 @@ Approval should be required for:
 
 Provides credentials to adapters without exposing them to the model or logs.
 
-MVP secret sources:
+Implemented secret source:
 
-- Environment variables.
+- Environment variables referenced as `env:VARIABLE_NAME` for API keys and bearer tokens.
+
+Planned secret sources:
+
 - Local encrypted secret store.
-- Runtime-provided OAuth token.
+- Runtime-provided per-user OAuth token.
 
 Future secret sources:
 

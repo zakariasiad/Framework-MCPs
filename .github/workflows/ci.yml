@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "feat/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Typecheck, tests, and example validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install
+      - name: Summarize dependency advisories
+        if: always()
+        run: |
+          npm audit --json > /tmp/npm-audit.json || true
+          node -e 'try { const a = require("/tmp/npm-audit.json"); for (const [name, v] of Object.entries(a.vulnerabilities ?? {})) console.log(v.severity + ": " + name + " | direct=" + v.isDirect + " | fix=" + JSON.stringify(v.fixAvailable)); } catch { console.log("Dependency audit report unavailable."); }'
+      - name: Block high and critical dependency advisories
+        run: npm audit --audit-level=high
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Run unit tests
+        run: npm test
+      - name: Validate example manifests
+        run: npm run validate:examples
+      - name: Build
+        run: npm run build

@@ -38,7 +38,7 @@ Before proposing a connector, include:
 
 ## Code style
 
-The implementation language is not finalized yet, but the recommended MVP stack is TypeScript. When code is added, prefer:
+The initial implementation uses TypeScript and Node.js. When adding code, prefer:
 
 - Clear types.
 - Small adapter interfaces.

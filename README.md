@@ -6,7 +6,7 @@ Framework-MCPs is an open-source, manifest-driven framework intended to help dev
 
 The goal is bigger than building a separate MCP server for every service: define a connector once, validate its capabilities and permissions, route execution through the appropriate adapter, and make the resulting tools reusable and maintainable.
 
-> **Project status: early design and scaffold stage.** The repository contains project documentation, a connector manifest schema, and example connector definitions. A complete, tested end-to-end runtime has not yet been verified. Roadmap items below are goals, not claims that every adapter is implemented.
+> **Project status: early MVP.** The repository now includes manifest validation, a read-only MCP stdio runtime for public HTTPS GET APIs, an OpenAPI 3.x-to-manifest generator, tests, and CI. This is not yet a general-purpose adapter framework: browser, CLI, database, write-operation, hosted HTTP, and approval-UI support remain unimplemented. A restricted read-only file adapter is now included, with structured JSON/CSV parsing and bounded text search. The runtime supports environment-backed API keys and bearer tokens for allowlisted HTTPS GET requests.
 
 ## Why Framework-MCPs?
 
@@ -87,8 +87,14 @@ See [Security Model](docs/SECURITY_MODEL.md) and [Authentication and Secrets](do
 
 ## Current repository contents
 
+- `src/openapi.ts` — OpenAPI 3.x import and draft manifest generation for GET operations.
+- `src/runtime.ts` — read-only HTTPS GET and restricted file MCP stdio runtime with URL/workspace allowlists, bounded outputs, optional JSON/CSV parsing, and bounded line-oriented search.
+- `src/cli.ts` — manifest validation, tool listing, OpenAPI import, and stdio serving.
 - `schemas/connector.manifest.schema.json` — connector manifest schema.
-- `examples/connectors/` — example connector definitions.
+- `examples/openapi/sample-catalog.yaml` — OpenAPI generator fixture.
+- `examples/connectors/` — public API, bearer-token template, and local file connector examples.
+- `examples/workspace/lesson.md` — sample document used by the file connector demo.
+- Run the local file connector from the repository root so its configured workspace path resolves correctly.
 - `docs/ARCHITECTURE.md` — component boundaries and execution flow.
 - `docs/MVP.md` — phased MVP plan and acceptance criteria.
 - `docs/CONNECTOR_TYPES.md` — connector types and trade-offs.
@@ -104,24 +110,30 @@ See [Security Model](docs/SECURITY_MODEL.md) and [Authentication and Secrets](do
 ## Roadmap
 
 ### Phase 1 — Prove one complete path
-- Load and validate a manifest.
-- Register tools deterministically.
-- Run a real MCP server with one working, read-only HTTP API connector.
-- Add a client-level smoke test and clear setup instructions.
+- [x] Load and validate a manifest.
+- [x] Register tools deterministically.
+- [x] Run a real MCP server with a read-only HTTP API connector.
+- [x] Add automated tests, CI, and setup instructions.
+- [x] Add full MCP client integration smoke tests for API and file connectors.
 
 ### Phase 2 — Make the core reliable
-- Enforce input validation and runtime policy.
-- Resolve secrets without exposing their values.
-- Add bounded outputs, timeouts, structured errors, and audit events.
-- Test positive and negative security cases.
+- [x] Enforce input-schema validation and read-only runtime policy.
+- [x] Resolve environment-backed API keys and bearer tokens outside model-visible arguments.
+- [x] Redact known credential strings from upstream response text.
+- [ ] Expand secret providers, per-user credential isolation, and audited credential lifecycle management.
+- [x] Add bounded outputs, timeouts, and structured runtime errors.
+- [ ] Add a formal audit-event sink.
+- [x] Test positive and negative API/file security cases.
 
 ### Phase 3 — Generate connectors
-- Import a useful subset of OpenAPI.
-- Generate reviewable connector definitions.
-- Detect unsupported API features and report them clearly.
+- [x] Import a useful subset of OpenAPI 3.x.
+- [x] Generate reviewable draft manifests for GET operations.
+- [x] Warn when non-GET operations are skipped.
+- [ ] Expand coverage for advanced parameter serialization, callbacks, webhooks, and external references.
 
 ### Phase 4 — Expand adapters
-- Add tested file and restricted CLI adapters.
+- [x] Add a tested restricted file-read adapter.
+- [ ] Add a restricted CLI adapter.
 - Add browser workflows against local test fixtures.
 - Add database access using allowlisted query templates.
 
@@ -134,7 +146,36 @@ These phases are priorities, not a promise that all features are currently imple
 
 ## Getting started
 
-At this stage, begin by reviewing the schema, examples, and design documents:
+Requirements: Node.js 20.11 or newer and npm.
+
+Clone the repository, install dependencies, and run the manifest tools:
+
+```bash
+git clone https://github.com/zakariasiad/Framework-MCPs.git
+cd Framework-MCPs
+npm install
+npm run typecheck
+npm test
+npm run validate:examples
+npm run build
+```
+
+The CLI supports manifest validation, listing declared tools, importing OpenAPI, and starting the read-only stdio runtime:
+
+```bash
+npm run dev -- validate examples/connectors/public-http-api.yaml
+npm run dev -- validate examples/connectors/bearer-token-api.yaml
+npm run dev -- validate examples/connectors/local-documents.yaml
+npm run dev -- list-tools examples/connectors/public-http-api.yaml
+npm run dev -- serve examples/connectors/public-http-api.yaml
+npm run dev -- import-openapi examples/openapi/sample-catalog.yaml generated/catalog.yaml
+```
+
+The OpenAPI importer supports OpenAPI 3.x documents with a root HTTPS server URL and emits draft manifests for unauthenticated GET operations. It resolves local component references, creates path/query input schemas, and warns when non-GET or authenticated operations are skipped. Duplicate generated tool names are rejected. Review every generated manifest before use. External references and advanced OpenAPI serialization rules are not supported.
+
+The stdio runtime supports allowlisted HTTPS GET API connectors with `auth.type: none`, `auth.type: apiKey`, or `auth.type: bearerToken`, plus read-only file connectors constrained to explicit workspace roots. See `examples/connectors/bearer-token-api.yaml` for a placeholder template; it targets `api.example.com` and will not work until replaced with an authorized API host and a runtime environment variable. `examples/connectors/local-documents.yaml` is a runnable file-read example when commands are run from the repository root. For authenticated connectors, set `secretRef` to `env:VARIABLE_NAME` and configure that variable in the runtime process. API keys use `x-api-key`; bearer tokens use the `Authorization` header. Secret values are not tool arguments, missing secrets fail closed, and known credentials are redacted from upstream response text. OAuth, browser sessions, database credentials, write operations, browser/CLI/database adapters, hosted HTTP transport, and a full approval UI are not implemented yet. File reads are limited to approved text-like extensions, block hidden and common credential-named files, verify real paths remain inside a configured root, and enforce output-size limits. Set a file operation's `format` to `json` or `csv` to return validated, structured JSON output; CSV parsing rejects duplicate/empty headers, inconsistent rows, malformed quotes, and more than 5000 data rows. `text` remains the default. The `fileSearch` operation searches approved text-like files within the configured workspace (maximum 500 files and bounded scan bytes), skips hidden/credential-named files and symlinks, and returns matching line snippets in deterministic path order with a configurable result cap. Risky operations are blocked rather than silently executed. Do not put real credentials in example manifests.
+
+At this stage, also review the schema, examples, and design documents:
 
 1. Read [Architecture](docs/ARCHITECTURE.md).
 2. Review the [connector manifest schema](schemas/connector.manifest.schema.json).
@@ -142,7 +183,7 @@ At this stage, begin by reviewing the schema, examples, and design documents:
 4. Follow the [MVP plan](docs/MVP.md).
 5. Read the [contribution guide](CONTRIBUTING.md).
 
-The package scripts describe the intended TypeScript development workflow, but do not assume the runtime is ready to execute until the source files, dependency installation, build, and tests have been verified. Setup and usage commands should be documented once the first end-to-end path is operational.
+A passing manifest validation only confirms the manifest matches the schema; it does not prove the upstream API behaves as expected or that the connector is appropriate for production. Generated connectors are drafts and require human review.
 
 ## Development principles
 

@@ -17,7 +17,9 @@ Targets:
 - Risk classification.
 - Approval decision logic.
 - Secret redaction.
-- Path validation.
+- File path template validation and workspace containment.
+- Deterministic file search ordering, hidden/credential-named file exclusion, symlink containment, scan budgets, and result caps.
+- Structured JSON/CSV parsing and malformed-row rejection.
 
 ### Adapter contract tests
 
@@ -68,6 +70,7 @@ Required negative tests:
 - Browser submit actions require approval.
 - SQL templates reject unbound or unexpected parameters.
 - Output size limits are enforced.
+- File search never follows symlinks outside configured workspace roots.
 - Missing policy fails closed.
 
 ## Browser workflow tests
