@@ -206,7 +206,7 @@ export async function executeFileRead(
       }
       return formatFileContent(content, tool.operation.format);
     } catch (error) {
-      if (error instanceof Error && error.message.startsWith("File exceeds the configured")) throw error;
+      if (error instanceof Error && /^(File exceeds the configured|CSV |File was configured as JSON|Unsupported file format)/.test(error.message)) throw error;
       // Try the next explicitly configured root without exposing local paths.
     }
   }
