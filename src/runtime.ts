@@ -151,7 +151,7 @@ async function executeApiGet(
   const timeoutMs = manifest.policy?.timeoutMs ?? 30000;
   const maxOutputBytes = manifest.policy?.maxOutputBytes ?? 1048576;
   const authHeaders = createAuthHeaders(manifest.auth);
-  const redactionValues = Object.values(authHeaders).flatMap((value) => [value, value.replace(/^Bearer\\s+/i, "")]);
+  const redactionValues = Object.values(authHeaders).flatMap((value) => [value, value.toLowerCase().startsWith("bearer ") ? value.slice(7) : value]);
   const response = await fetch(url, {
     method: "GET",
     headers: {
