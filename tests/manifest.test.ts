@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseManifestText, validateManifest } from "../src/manifest.js";
+import { resolveApiUrl, assertExecutableReadOnlyApiTool } from "../src/runtime.js";
 
 const schemaExamplePath = resolve(process.cwd(), "examples/connectors/public-http-api.yaml");
 
@@ -63,5 +64,33 @@ describe("connector manifest validation", () => {
       }],
     });
     expect(result.valid).toBe(false);
+  });
+});
+
+describe("read-only API runtime policy", () => {
+  async function exampleManifest() {
+    const source = await readFile(schemaExamplePath, "utf8");
+    const result = validateManifest(parseManifestText(source, schemaExamplePath));
+    if (!result.valid) throw new Error("Test fixture manifest is invalid");
+    return result.manifest;
+  }
+
+  it("resolves and safely encodes path parameters", async () => {
+    const manifest = await exampleManifest();
+    const tool = manifest.tools[0]!;
+    const url = resolveApiUrl(manifest, tool, { owner: "open ai", repo: "Framework-MCPs" });
+    expect(url.toString()).toBe("https://api.github.com/repos/open%20ai/Framework-MCPs");
+  });
+
+  it("rejects non-GET operations", async () => {
+    const manifest = await exampleManifest();
+    const tool = { ...manifest.tools[0]!, operation: { ...manifest.tools[0]!.operation, method: "DELETE" } };
+    expect(() => assertExecutableReadOnlyApiTool(manifest, tool)).toThrow(/Only HTTP GET/);
+  });
+
+  it("rejects a base URL outside the allowlist", async () => {
+    const manifest = await exampleManifest();
+    const restricted = { ...manifest, adapter: { ...manifest.adapter, baseUrl: "https://example.org" } };
+    expect(() => resolveApiUrl(restricted, manifest.tools[0]!, { owner: "x", repo: "y" })).toThrow(/allowedDomains/);
   });
 });
