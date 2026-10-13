@@ -59,6 +59,9 @@ describe("file-read adapter", () => {
     await writeFile(join(root, "payload.bin"), "data", "utf8");
     const binary = await fixture(root, "payload.bin");
     await expect(executeFileRead(binary, binary.tools[0]!, {})).rejects.toThrow(/file type is not enabled/);
+    await writeFile(join(root, "credentials.json"), '{"api_key":"placeholder"}', "utf8");
+    const credentials = await fixture(root, "credentials.json");
+    await expect(executeFileRead(credentials, credentials.tools[0]!, {})).rejects.toThrow(/credential-related names/);
     await writeFile(join(root, "large.md"), "x".repeat(1100), "utf8");
     const oversized = await fixture(root, "large.md");
     await expect(executeFileRead(oversized, oversized.tools[0]!, {})).rejects.toThrow(/output limit/);
