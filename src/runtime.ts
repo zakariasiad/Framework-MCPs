@@ -142,7 +142,7 @@ async function readLimitedBody(response: Response, maxBytes: number): Promise<st
   return Buffer.concat(chunks.map((chunk) => Buffer.from(chunk))).toString("utf8");
 }
 
-async function executeApiGet(
+export async function executeApiGet(
   manifest: ConnectorManifest,
   tool: ConnectorTool,
   args: Record<string, unknown>,
