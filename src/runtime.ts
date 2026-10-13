@@ -428,6 +428,8 @@ export async function executeFileSearch(
     if (!root || !rootInfo?.isDirectory()) continue;
     const startDirectory = resolve(root, directory);
     if (!isWithinDirectory(root, startDirectory)) continue;
+    const realStartDirectory = await realpath(startDirectory).catch(() => undefined);
+    if (!realStartDirectory || !isWithinDirectory(root, realStartDirectory)) continue;
     const walk = async (current: string): Promise<void> => {
       if (matches.length >= maxResults || filesVisited >= maxFiles || bytesScanned >= maxScanBytes) return;
       const entries = await readdir(current, { withFileTypes: true }).catch(() => []);
@@ -463,7 +465,7 @@ export async function executeFileSearch(
         }
       }
     };
-    await walk(startDirectory);
+    await walk(realStartDirectory);
   }
   const result: { query: string; matches: Array<{ path: string; line: number; snippet: string }>; truncated: boolean } = {
     query,
