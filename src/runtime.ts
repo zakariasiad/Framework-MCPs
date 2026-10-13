@@ -83,7 +83,11 @@ export function resolveApiUrl(
     if (typeof value !== "string" && typeof value !== "number") {
       throw new Error(`Missing or invalid path parameter: ${key}`);
     }
-    return encodeURIComponent(String(value));
+    const segment = String(value);
+    if (segment === "." || segment === ".." || segment.includes("\\\\")) {
+      throw new Error(`Unsafe path parameter: ${key}`);
+    }
+    return encodeURIComponent(segment).replace(/\\./g, "%2E");
   });
   if (/\{[^}]+\}/.test(path)) throw new Error("HTTP operation contains an unresolved path parameter.");
 
