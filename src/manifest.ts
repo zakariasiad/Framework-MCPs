@@ -1,5 +1,5 @@
 import { readFile, readdir } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
@@ -57,14 +57,9 @@ export function loadManifestSchema(): Record<string, unknown> {
   if (!path) {
     throw new Error("Cannot find schemas/connector.manifest.schema.json. Run the command from the repository root or reinstall the package with its schemas.");
   }
-  return JSON.parse(requireSchemaText(path)) as Record<string, unknown>;
+  return JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
 }
 
-function requireSchemaText(path: string): string {
-  // Kept synchronous to make schema compilation deterministic during module setup.
-  const { readFileSync } = require("node:fs") as typeof import("node:fs");
-  return readFileSync(path, "utf8");
-}
 
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 addFormats(ajv);
