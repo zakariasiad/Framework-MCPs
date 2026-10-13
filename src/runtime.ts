@@ -134,6 +134,50 @@ function resolveFileTemplate(template: string, args: Record<string, unknown>): s
   return expanded;
 }
 
+function parseCsv(content: string): Array<Record<string, string>> {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let quoted = false;
+  for (let i = 0; i < content.length; i += 1) {
+    const char = content[i]!;
+    if (quoted) {
+      if (char === '"') {
+        if (content[i + 1] === '"') { field += '"'; i += 1; }
+        else quoted = false;
+      } else field += char;
+    } else if (char === '"' && field.length === 0) quoted = true;
+    else if (char === ',') { row.push(field); field = ""; }
+    else if (char === '\n' || char === '\r') {
+      if (char === '\r' && content[i + 1] === '\n') i += 1;
+      row.push(field);
+      if (row.some((cell) => cell.length > 0)) rows.push(row);
+      row = []; field = "";
+    } else field += char;
+  }
+  if (quoted) throw new Error("CSV file contains an unterminated quoted field.");
+  if (field.length > 0 || row.length > 0) { row.push(field); if (row.some((cell) => cell.length > 0)) rows.push(row); }
+  if (rows.length === 0) return [];
+  const headers = rows[0]!.map((header) => header.trim());
+  if (headers.some((header) => !header)) throw new Error("CSV headers must be non-empty.");
+  if (new Set(headers).size !== headers.length) throw new Error("CSV headers must be unique.");
+  const dataRows = rows.slice(1);
+  if (dataRows.length > 5000) throw new Error("CSV file exceeds the 5000-row parsing limit.");
+  return dataRows.map((cells, index) => {
+    if (cells.length !== headers.length) throw new Error(`CSV row ${index + 2} has ${cells.length} columns; expected ${headers.length}.`);
+    return Object.fromEntries(headers.map((header, column) => [header, cells[column]!]));
+  });
+}
+
+function formatFileContent(content: string, format: unknown): string {
+  if (format === undefined || format === "text") return content;
+  if (format === "json") {
+    try { return JSON.stringify(JSON.parse(content) as unknown, null, 2); }
+    catch { throw new Error("File was configured as JSON but does not contain valid JSON."); }
+  }
+  if (format === "csv") return JSON.stringify(parseCsv(content), null, 2);
+  throw new Error('Unsupported file format; use "text", "json", or "csv".');
+}
 export async function executeFileRead(
   manifest: ConnectorManifest,
   tool: ConnectorTool,
@@ -160,7 +204,7 @@ export async function executeFileRead(
       if (Buffer.byteLength(content, "utf8") > maxBytes) {
         throw new Error(`File exceeds the configured ${maxBytes}-byte output limit.`);
       }
-      return content;
+      return formatFileContent(content, tool.operation.format);
     } catch (error) {
       if (error instanceof Error && error.message.startsWith("File exceeds the configured")) throw error;
       // Try the next explicitly configured root without exposing local paths.
