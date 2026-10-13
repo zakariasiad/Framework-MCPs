@@ -84,6 +84,8 @@ Rules:
 - Redact secrets from logs, errors, screenshots, and traces.
 - Never expose browser cookies directly to the model.
 - Avoid putting passwords, tokens, or PII in HTTP headers generated from tool parameters.
+- Reject credential-like field names in model-visible tool schemas and use runtime secret references instead.
+- Resolve credentials only immediately before a request, and redact known credential strings from upstream response text before it enters model context.
 - Rotate or expire tokens when possible.
 
 ## Browser automation safety
