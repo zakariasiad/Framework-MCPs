@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { readFile, realpath, stat } from "node:fs/promises";
+import { readFile, readdir, realpath, stat } from "node:fs/promises";
 import { extname, isAbsolute, relative, resolve, sep } from "node:path";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -84,7 +84,9 @@ export function assertExecutableReadOnlyFileTool(manifest: ConnectorManifest, to
   if (manifest.auth && manifest.auth.type !== "none") {
     throw new Error("File connectors do not support authentication in this runtime.");
   }
-  if (tool.operation.type !== "fileRead") throw new Error("File connectors support only fileRead operations.");
+  if (!["fileRead", "fileSearch"].includes(tool.operation.type)) {
+    throw new Error("File connectors support only fileRead and fileSearch operations.");
+  }
   if (!tool.risk.readOnly || tool.risk.destructive || tool.risk.requiresApproval) {
     throw new Error("This file tool is not eligible for automatic execution.");
   }
@@ -94,10 +96,19 @@ export function assertExecutableReadOnlyFileTool(manifest: ConnectorManifest, to
   if (!Array.isArray(manifest.adapter.workspaceRoots) || manifest.adapter.workspaceRoots.length === 0) {
     throw new Error("File connectors require at least one configured workspace root.");
   }
-  if (typeof tool.operation.path !== "string" || !tool.operation.path.trim()) {
+  if (tool.operation.type === "fileRead" && (typeof tool.operation.path !== "string" || !tool.operation.path.trim())) {
     throw new Error("File read operations require a relative operation.path.");
   }
+  if (tool.operation.type === "fileSearch" && tool.operation.directory !== undefined && typeof tool.operation.directory !== "string") {
+    throw new Error("File search operation.directory must be a relative directory path.");
+  }
+  if (tool.operation.type === "fileSearch" && tool.inputSchema.type !== "object") {
+    throw new Error("File search tools require an object input schema.");
+  }
   const format = tool.operation.format;
+  if (tool.operation.type === "fileSearch" && format !== undefined) {
+    throw new Error("File search operations do not support a file format setting.");
+  }
   if (format !== undefined && !["text", "json", "csv"].includes(String(format))) {
     throw new Error('File operation.format must be "text", "json", or "csv".');
   }
@@ -360,6 +371,104 @@ export async function executeApiGet(
   return body;
 }
 
+function resolveSearchDirectory(directory: string | undefined): string {
+  const value = directory ?? "";
+  if (value === "" || value === ".") return "";
+  if (value.startsWith("/") || value.startsWith("\\") || isAbsolute(value) || /^[A-Za-z]:/.test(value)) {
+    throw new Error("File search directory must be relative to a configured workspace root.");
+  }
+  const segments = value.split(/[\\/]+/);
+  if (segments.some((segment) => segment === ".." || segment.startsWith("."))) {
+    throw new Error("File search cannot access parent or hidden directories.");
+  }
+  return segments.filter(Boolean).join(sep);
+}
+
+export async function executeFileSearch(
+  manifest: ConnectorManifest,
+  tool: ConnectorTool,
+  args: Record<string, unknown>,
+): Promise<string> {
+  assertExecutableReadOnlyFileTool(manifest, tool);
+  if (tool.operation.type !== "fileSearch") throw new Error("This tool is not a fileSearch operation.");
+  const query = args.query;
+  if (typeof query !== "string" || query.trim().length < 1 || query.length > 200) {
+    throw new Error("File search query must be a non-empty string of at most 200 characters.");
+  }
+  const maxResultsValue = args.maxResults;
+  const maxResults = maxResultsValue === undefined ? 20 : maxResultsValue;
+  if (typeof maxResults !== "number" || !Number.isInteger(maxResults) || maxResults < 1 || maxResults > 100) {
+    throw new Error("maxResults must be an integer between 1 and 100.");
+  }
+  const directory = resolveSearchDirectory(typeof tool.operation.directory === "string" ? tool.operation.directory : undefined);
+  const roots = manifest.adapter.workspaceRoots as string[];
+  const outputLimit = manifest.policy?.maxOutputBytes ?? 1048576;
+  const allowedExtensions = new Set([".txt", ".md", ".json", ".csv", ".yaml", ".yml", ".xml", ".html", ".css", ".js", ".ts", ".py", ".ini", ".toml"]);
+  const needle = query.toLocaleLowerCase();
+  const matches: Array<{ path: string; line: number; snippet: string }> = [];
+  let filesVisited = 0;
+  let bytesScanned = 0;
+  const maxFiles = 500;
+  const maxScanBytes = Math.min(20 * 1024 * 1024, Math.max(outputLimit, 1024 * 1024) * 10);
+
+  for (const configuredRoot of roots) {
+    const root = await realpath(resolve(configuredRoot)).catch(() => undefined);
+    const rootInfo = root ? await stat(root).catch(() => undefined) : undefined;
+    if (!root || !rootInfo?.isDirectory()) continue;
+    const startDirectory = resolve(root, directory);
+    if (!isWithinDirectory(root, startDirectory)) continue;
+    const walk = async (current: string): Promise<void> => {
+      if (matches.length >= maxResults || filesVisited >= maxFiles || bytesScanned >= maxScanBytes) return;
+      const entries = await readdir(current, { withFileTypes: true }).catch(() => []);
+      for (const entry of entries) {
+        if (matches.length >= maxResults || filesVisited >= maxFiles || bytesScanned >= maxScanBytes) return;
+        if (entry.name.startsWith(".")) continue;
+        const fullPath = resolve(current, entry.name);
+        if (!isWithinDirectory(root, fullPath)) continue;
+        if (entry.isDirectory()) {
+          await walk(fullPath);
+          continue;
+        }
+        if (!entry.isFile()) continue;
+        const baseName = entry.name.toLowerCase();
+        if (/^(credentials?|secrets?|passwords?|tokens?|api[-_]?keys?|service[-_]?account)(?:\..*)?$/.test(baseName)) continue;
+        if (!allowedExtensions.has(extname(entry.name).toLowerCase())) continue;
+        filesVisited += 1;
+        const info = await stat(fullPath).catch(() => undefined);
+        if (!info?.isFile() || info.size > 1024 * 1024 || bytesScanned + info.size > maxScanBytes) continue;
+        const content = await readFile(fullPath, "utf8").catch(() => undefined);
+        if (content === undefined) continue;
+        bytesScanned += Buffer.byteLength(content, "utf8");
+        const lines = content.split(/\r?\n/);
+        for (let index = 0; index < lines.length; index += 1) {
+          const line = lines[index]!;
+          if (!line.toLocaleLowerCase().includes(needle)) continue;
+          matches.push({
+            path: relative(root, fullPath).split(sep).join("/"),
+            line: index + 1,
+            snippet: line.length > 240 ? line.slice(0, 237) + "..." : line,
+          });
+          if (matches.length >= maxResults) break;
+        }
+      }
+    };
+    await walk(startDirectory);
+  }
+  const result: { query: string; matches: Array<{ path: string; line: number; snippet: string }>; truncated: boolean } = {
+    query,
+    matches,
+    truncated: matches.length >= maxResults || filesVisited >= maxFiles || bytesScanned >= maxScanBytes,
+  };
+  let output = JSON.stringify(result, null, 2);
+  while (Buffer.byteLength(output, "utf8") > outputLimit && matches.length > 0) {
+    matches.pop();
+    result.truncated = true;
+    output = JSON.stringify(result, null, 2);
+  }
+  if (Buffer.byteLength(output, "utf8") > outputLimit) throw new Error("File search result exceeds the configured output limit.");
+  return output;
+}
+
 export async function startStdioServer(manifestPath: string): Promise<void> {
   const manifest = await loadAndValidateManifest(manifestPath);
   // Refuse to publish tools whose policy or argument schema is not executable and safe.
@@ -389,7 +498,9 @@ export async function startStdioServer(manifestPath: string): Promise<void> {
       const validationError = validateArguments(tool.inputSchema, args);
       if (validationError) throw new Error(`Invalid tool arguments: ${validationError}`);
       const result = manifest.adapter.type === "file"
-        ? await executeFileRead(manifest, tool, args)
+        ? tool.operation.type === "fileSearch"
+          ? await executeFileSearch(manifest, tool, args)
+          : await executeFileRead(manifest, tool, args)
         : await executeApiGet(manifest, tool, args);
       return {
         content: [{ type: "text" as const, text: typeof result === "string" ? result : JSON.stringify(result, null, 2) }],
