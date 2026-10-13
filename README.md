@@ -6,7 +6,7 @@ Framework-MCPs is an open-source, manifest-driven framework intended to help dev
 
 The goal is bigger than building a separate MCP server for every service: define a connector once, validate its capabilities and permissions, route execution through the appropriate adapter, and make the resulting tools reusable and maintainable.
 
-> **Project status: early design and scaffold stage.** The repository contains project documentation, a connector manifest schema, and example connector definitions. A complete, tested end-to-end runtime has not yet been verified. Roadmap items below are goals, not claims that every adapter is implemented.
+> **Project status: early MVP.** The repository now includes manifest validation, a read-only MCP stdio runtime for public HTTPS GET APIs, an OpenAPI 3.x-to-manifest generator, tests, and CI. This is not yet a general-purpose adapter framework: authenticated APIs and browser, CLI, database, file, write-operation, hosted HTTP, and approval-UI support remain unimplemented.
 
 ## Why Framework-MCPs?
 
@@ -87,7 +87,11 @@ See [Security Model](docs/SECURITY_MODEL.md) and [Authentication and Secrets](do
 
 ## Current repository contents
 
+- `src/openapi.ts` — OpenAPI 3.x import and draft manifest generation for GET operations.
+- `src/runtime.ts` — read-only HTTPS GET MCP stdio runtime with URL allowlists, query/path parameters, timeouts, and output limits.
+- `src/cli.ts` — manifest validation, tool listing, OpenAPI import, and stdio serving.
 - `schemas/connector.manifest.schema.json` — connector manifest schema.
+- `examples/openapi/sample-catalog.yaml` — OpenAPI generator fixture.
 - `examples/connectors/` — example connector definitions.
 - `docs/ARCHITECTURE.md` — component boundaries and execution flow.
 - `docs/MVP.md` — phased MVP plan and acceptance criteria.
@@ -104,10 +108,11 @@ See [Security Model](docs/SECURITY_MODEL.md) and [Authentication and Secrets](do
 ## Roadmap
 
 ### Phase 1 — Prove one complete path
-- Load and validate a manifest.
-- Register tools deterministically.
-- Run a real MCP server with one working, read-only HTTP API connector.
-- Add a client-level smoke test and clear setup instructions.
+- [x] Load and validate a manifest.
+- [x] Register tools deterministically.
+- [x] Run a real MCP server with a read-only HTTP API connector.
+- [x] Add automated tests, CI, and setup instructions.
+- [ ] Add a full MCP client integration smoke test.
 
 ### Phase 2 — Make the core reliable
 - Enforce input validation and runtime policy.
@@ -116,9 +121,10 @@ See [Security Model](docs/SECURITY_MODEL.md) and [Authentication and Secrets](do
 - Test positive and negative security cases.
 
 ### Phase 3 — Generate connectors
-- Import a useful subset of OpenAPI.
-- Generate reviewable connector definitions.
-- Detect unsupported API features and report them clearly.
+- [x] Import a useful subset of OpenAPI 3.x.
+- [x] Generate reviewable draft manifests for GET operations.
+- [x] Warn when non-GET operations are skipped.
+- [ ] Expand coverage for advanced parameter serialization, callbacks, webhooks, and external references.
 
 ### Phase 4 — Expand adapters
 - Add tested file and restricted CLI adapters.
@@ -148,15 +154,18 @@ npm run validate:examples
 npm run build
 ```
 
-The initial CLI supports manifest validation and listing declared tools:
+The CLI supports manifest validation, listing declared tools, importing OpenAPI, and starting the read-only stdio runtime:
 
 ```bash
 npm run dev -- validate examples/connectors/public-http-api.yaml
 npm run dev -- list-tools examples/connectors/public-http-api.yaml
 npm run dev -- serve examples/connectors/public-http-api.yaml
+npm run dev -- import-openapi examples/openapi/sample-catalog.yaml generated/catalog.yaml
 ```
 
-The first runtime slice can host a single manifest over MCP stdio and execute allowlisted HTTPS GET operations for API connectors with `auth.type: none`. Authenticated connectors, write operations, browser/CLI/database/file adapters, hosted HTTP transport, and a full approval UI are not implemented yet. Risky operations are blocked rather than silently executed. Do not put real credentials in example manifests.
+The OpenAPI importer supports OpenAPI 3.x documents with a root HTTPS server URL and emits draft manifests for GET operations. It resolves local component references, creates path/query input schemas, and warns about skipped non-GET operations. Review every generated manifest before use. External references and advanced OpenAPI serialization rules are not supported.
+
+The stdio runtime can execute allowlisted HTTPS GET operations for API connectors with `auth.type: none`. It supports scalar/array query values and path parameters, validates tool arguments, bounds response bodies, and rejects redirects. Authenticated connectors, write operations, browser/CLI/database/file adapters, hosted HTTP transport, and a full approval UI are not implemented yet. Risky operations are blocked rather than silently executed. Do not put real credentials in example manifests.
 
 At this stage, also review the schema, examples, and design documents:
 
@@ -166,7 +175,7 @@ At this stage, also review the schema, examples, and design documents:
 4. Follow the [MVP plan](docs/MVP.md).
 5. Read the [contribution guide](CONTRIBUTING.md).
 
-The manifest validation CLI is the first implementation slice. API execution and a live MCP runtime remain planned work; successful manifest validation alone does not mean a connector is executable.
+A passing manifest validation only confirms the manifest matches the schema; it does not prove the upstream API behaves as expected or that the connector is appropriate for production. Generated connectors are drafts and require human review.
 
 ## Development principles
 
