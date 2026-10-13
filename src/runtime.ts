@@ -87,7 +87,8 @@ export function resolveApiUrl(
   });
   if (/\{[^}]+\}/.test(path)) throw new Error("HTTP operation contains an unresolved path parameter.");
 
-  const url = new URL(path, baseUrl);
+  const basePath = baseUrl.pathname.replace(/\/$/, "");
+  const url = new URL(`${basePath}/${path.replace(/^\//, "")}`, baseUrl.origin);
   if (url.hostname !== baseUrl.hostname || url.protocol !== "https:") {
     throw new Error("Resolved URL escaped the configured API origin.");
   }
