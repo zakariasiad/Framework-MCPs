@@ -85,6 +85,21 @@ export function resolveApiUrl(
   if (url.hostname !== baseUrl.hostname || url.protocol !== "https:") {
     throw new Error("Resolved URL escaped the configured API origin.");
   }
+
+  const queryMap = objectRecord(tool.operation.query);
+  if (queryMap) {
+    for (const [queryName, argumentName] of Object.entries(queryMap)) {
+      const value = args[String(argumentName)];
+      if (value === undefined || value === null) continue;
+      if (Array.isArray(value)) {
+        for (const item of value) url.searchParams.append(queryName, String(item));
+      } else if (typeof value === "object") {
+        throw new Error(`Query parameter "${queryName}" must be a scalar or array.`);
+      } else {
+        url.searchParams.set(queryName, String(value));
+      }
+    }
+  }
   return url;
 }
 
