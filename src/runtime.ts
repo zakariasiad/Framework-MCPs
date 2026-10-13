@@ -102,8 +102,19 @@ export function assertExecutableReadOnlyFileTool(manifest: ConnectorManifest, to
   if (tool.operation.type === "fileSearch" && tool.operation.directory !== undefined && typeof tool.operation.directory !== "string") {
     throw new Error("File search operation.directory must be a relative directory path.");
   }
-  if (tool.operation.type === "fileSearch" && tool.inputSchema.type !== "object") {
-    throw new Error("File search tools require an object input schema.");
+  if (tool.operation.type === "fileSearch") {
+    if (tool.inputSchema.type !== "object") throw new Error("File search tools require an object input schema.");
+    const properties = objectRecord(tool.inputSchema.properties);
+    const querySchema = properties ? objectRecord(properties.query) : undefined;
+    const required = Array.isArray(tool.inputSchema.required) ? tool.inputSchema.required : [];
+    if (!querySchema || querySchema.type !== "string" || !required.includes("query")) {
+      throw new Error('File search tools require a required string input named "query".');
+    }
+    const maxResultsSchema = properties ? objectRecord(properties.maxResults) : undefined;
+    if (maxResultsSchema && (maxResultsSchema.type !== "integer" || (typeof maxResultsSchema.minimum === "number" && maxResultsSchema.minimum < 1) || (typeof maxResultsSchema.maximum === "number" && maxResultsSchema.maximum > 100))) {
+      throw new Error("File search maxResults schema must be an integer limited to 1..100.");
+    }
+    resolveSearchDirectory(typeof tool.operation.directory === "string" ? tool.operation.directory : undefined);
   }
   const format = tool.operation.format;
   if (tool.operation.type === "fileSearch" && format !== undefined) {
