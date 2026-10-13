@@ -88,6 +88,13 @@ describe("read-only API runtime policy", () => {
     expect(() => assertExecutableReadOnlyApiTool(manifest, tool)).toThrow(/Only HTTP GET/);
   });
 
+  it("fails closed when no API host allowlist is configured", async () => {
+    const manifest = await exampleManifest();
+    const unrestricted = { ...manifest, policy: { ...manifest.policy, allowedDomains: [] } };
+    expect(() => resolveApiUrl(unrestricted, manifest.tools[0]!, { owner: "openai", repo: "sdk" }))
+      .toThrow(/allowedDomains must contain at least one/);
+  });
+
   it("rejects a base URL outside the allowlist", async () => {
     const manifest = await exampleManifest();
     const restricted = { ...manifest, adapter: { ...manifest.adapter, baseUrl: "https://example.org" } };
