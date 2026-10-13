@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createAuthHeaders, parseEnvironmentSecretReference, resolveEnvironmentSecret } from "../src/secrets.js";
+import { createAuthHeaders, parseEnvironmentSecretReference, redactSecretValues, resolveEnvironmentSecret } from "../src/secrets.js";
 
 describe("environment secret provider", () => {
   it("accepts a strict environment-variable reference", () => {
@@ -38,5 +38,18 @@ describe("environment secret provider", () => {
       .toThrow(/only none, apiKey, and bearerToken/);
     expect(() => createAuthHeaders({ type: "bearerToken", secretRef: "env:MISSING" }, {}))
       .toThrowError(/not configured/);
+  });
+});
+
+describe("secret redaction", () => {
+  it("redacts both bearer headers and raw token echoes", () => {
+    expect(redactSecretValues(
+      '{"auth":"Bearer sensitive-token","echo":"sensitive-token"}',
+      ["Bearer sensitive-token", "sensitive-token"],
+    )).toBe('{"auth":"[REDACTED]","echo":"[REDACTED]"}');
+  });
+
+  it("does not change text when no credential is configured", () => {
+    expect(redactSecretValues("ordinary public response", [])).toBe("ordinary public response");
   });
 });
