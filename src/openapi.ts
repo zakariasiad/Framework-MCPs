@@ -51,7 +51,7 @@ function resolveLocalRef(value: unknown, root: JsonObject, seen = new Set<string
     nextSeen.add(ref);
     const resolved = resolveLocalRef(target, root, nextSeen);
     const siblings = Object.fromEntries(Object.entries(current).filter(([key]) => key !== "$ref"));
-    return { ...object(resolved), ...resolveNested(siblings, root, nextSeen) };
+    return { ...(object(resolved) ?? {}), ...(object(resolveNested(siblings, root, nextSeen)) ?? {}) };
   }
   return resolveNested(current, root, seen);
 }
@@ -233,7 +233,9 @@ export function generateManifestFromOpenApi(
     },
     tools: tools as ConnectorManifest["tools"],
   };
-  if (warnings.length) warnings.unshift("Generated connector is a draft. Review paths, schemas, authentication, and permissions before enabling it.");
-  else warnings.push("Generated connector is a draft. Review paths, schemas, authentication, and permissions before enabling it.");
+  warnings.unshift("Generated connector is a draft. Review paths, schemas, authentication, and permissions before enabling it.");
+  if (manifest.auth?.type !== "none") {
+    warnings.push(`Detected authentication type "${manifest.auth?.type}". The current runtime does not execute authenticated requests; configure secrets only after adding and reviewing an auth provider.`);
+  }
   return { manifest, warnings };
 }
