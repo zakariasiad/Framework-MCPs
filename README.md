@@ -6,7 +6,7 @@ Framework-MCPs is an open-source, manifest-driven framework intended to help dev
 
 The goal is bigger than building a separate MCP server for every service: define a connector once, validate its capabilities and permissions, route execution through the appropriate adapter, and make the resulting tools reusable and maintainable.
 
-> **Project status: early MVP.** The repository now includes manifest validation, a read-only MCP stdio runtime for public HTTPS GET APIs, an OpenAPI 3.x-to-manifest generator, tests, and CI. This is not yet a general-purpose adapter framework: authenticated APIs and browser, CLI, database, file, write-operation, hosted HTTP, and approval-UI support remain unimplemented.
+> **Project status: early MVP.** The repository now includes manifest validation, a read-only MCP stdio runtime for public HTTPS GET APIs, an OpenAPI 3.x-to-manifest generator, tests, and CI. This is not yet a general-purpose adapter framework: browser, CLI, database, file, write-operation, hosted HTTP, and approval-UI support remain unimplemented. The runtime supports environment-backed API keys and bearer tokens for allowlisted HTTPS GET requests.
 
 ## Why Framework-MCPs?
 
@@ -165,7 +165,7 @@ npm run dev -- import-openapi examples/openapi/sample-catalog.yaml generated/cat
 
 The OpenAPI importer supports OpenAPI 3.x documents with a root HTTPS server URL and emits draft manifests for unauthenticated GET operations. It resolves local component references, creates path/query input schemas, and warns when non-GET or authenticated operations are skipped. Duplicate generated tool names are rejected. Review every generated manifest before use. External references and advanced OpenAPI serialization rules are not supported.
 
-The stdio runtime can execute allowlisted HTTPS GET operations for API connectors with `auth.type: none`. It supports scalar/array query values and path parameters, validates tool arguments, rejects traversal-like path parameter values, bounds response bodies, and rejects redirects. Authenticated connectors, write operations, browser/CLI/database/file adapters, hosted HTTP transport, and a full approval UI are not implemented yet. Risky operations are blocked rather than silently executed. Do not put real credentials in example manifests.
+The stdio runtime can execute allowlisted HTTPS GET operations for API connectors with `auth.type: none`, `auth.type: apiKey`, or `auth.type: bearerToken`. For authenticated connectors, set `secretRef` to `env:VARIABLE_NAME` and configure that variable in the runtime process. API keys use `x-api-key`; bearer tokens use the `Authorization` header. Secret values are not tool arguments, missing secrets fail closed, and known credentials are redacted from upstream response text. OAuth, browser sessions, database credentials, write operations, browser/CLI/database/file adapters, hosted HTTP transport, and a full approval UI are not implemented yet. Risky operations are blocked rather than silently executed. Do not put real credentials in example manifests.
 
 At this stage, also review the schema, examples, and design documents:
 
