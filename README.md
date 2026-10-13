@@ -163,9 +163,9 @@ npm run dev -- serve examples/connectors/public-http-api.yaml
 npm run dev -- import-openapi examples/openapi/sample-catalog.yaml generated/catalog.yaml
 ```
 
-The OpenAPI importer supports OpenAPI 3.x documents with a root HTTPS server URL and emits draft manifests for GET operations. It resolves local component references, creates path/query input schemas, and warns about skipped non-GET operations. Review every generated manifest before use. External references and advanced OpenAPI serialization rules are not supported.
+The OpenAPI importer supports OpenAPI 3.x documents with a root HTTPS server URL and emits draft manifests for unauthenticated GET operations. It resolves local component references, creates path/query input schemas, and warns when non-GET or authenticated operations are skipped. Duplicate generated tool names are rejected. Review every generated manifest before use. External references and advanced OpenAPI serialization rules are not supported.
 
-The stdio runtime can execute allowlisted HTTPS GET operations for API connectors with `auth.type: none`. It supports scalar/array query values and path parameters, validates tool arguments, bounds response bodies, and rejects redirects. Authenticated connectors, write operations, browser/CLI/database/file adapters, hosted HTTP transport, and a full approval UI are not implemented yet. Risky operations are blocked rather than silently executed. Do not put real credentials in example manifests.
+The stdio runtime can execute allowlisted HTTPS GET operations for API connectors with `auth.type: none`. It supports scalar/array query values and path parameters, validates tool arguments, rejects traversal-like path parameter values, bounds response bodies, and rejects redirects. Authenticated connectors, write operations, browser/CLI/database/file adapters, hosted HTTP transport, and a full approval UI are not implemented yet. Risky operations are blocked rather than silently executed. Do not put real credentials in example manifests.
 
 At this stage, also review the schema, examples, and design documents:
 
