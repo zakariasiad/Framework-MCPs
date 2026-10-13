@@ -97,6 +97,16 @@ export function assertExecutableReadOnlyFileTool(manifest: ConnectorManifest, to
   if (typeof tool.operation.path !== "string" || !tool.operation.path.trim()) {
     throw new Error("File read operations require a relative operation.path.");
   }
+  const format = tool.operation.format;
+  if (format !== undefined && !["text", "json", "csv"].includes(String(format))) {
+    throw new Error('File operation.format must be "text", "json", or "csv".');
+  }
+  if (format === "json" && extname(tool.operation.path).toLowerCase() !== ".json") {
+    throw new Error('JSON parsing requires a .json operation.path.');
+  }
+  if (format === "csv" && extname(tool.operation.path).toLowerCase() !== ".csv") {
+    throw new Error('CSV parsing requires a .csv operation.path.');
+  }
 }
 
 function isWithinDirectory(root: string, target: string): boolean {
