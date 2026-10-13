@@ -116,8 +116,11 @@ See [Security Model](docs/SECURITY_MODEL.md) and [Authentication and Secrets](do
 
 ### Phase 2 — Make the core reliable
 - Enforce input validation and runtime policy.
-- Resolve secrets without exposing their values.
-- Add bounded outputs, timeouts, structured errors, and audit events.
+- [x] Resolve environment-backed API keys and bearer tokens outside model-visible arguments.
+- [x] Redact known credential strings from upstream response text.
+- [ ] Expand secret providers, per-user credential isolation, and audited credential lifecycle management.
+- [x] Add bounded outputs, timeouts, and structured runtime errors.
+- [ ] Add a formal audit-event sink.
 - Test positive and negative security cases.
 
 ### Phase 3 — Generate connectors
