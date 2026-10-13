@@ -1,5 +1,7 @@
 # Connector Types
 
+> **Current runtime status:** read-only HTTPS GET API connectors and a restricted local file-read adapter are implemented. Browser, CLI, database, write operations, and hosted transport remain design targets, not supported runtime features yet.
+
 Framework-MCPs supports multiple connector families because different systems expose different access surfaces. The framework should prefer the most stable and authorized surface available.
 
 ## Selection order
@@ -156,9 +158,14 @@ Best for:
 - Data transformation tasks.
 - Controlled file search.
 
-Capabilities:
+Current implementation:
 
-- Read allowlisted files or directories.
+- Reads a manifest-declared relative path under an explicitly configured workspace root.
+- Supports a limited allowlist of text-like extensions.
+- Blocks hidden paths and parent-directory traversal, checks resolved paths remain within the root, and enforces output-size limits.
+
+Planned capabilities:
+
 - Parse structured formats.
 - Expose search, summarize, filter, and transform tools.
 - Optionally write generated files to a safe output directory.
