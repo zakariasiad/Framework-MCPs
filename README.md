@@ -88,7 +88,7 @@ See [Security Model](docs/SECURITY_MODEL.md) and [Authentication and Secrets](do
 ## Current repository contents
 
 - `src/openapi.ts` — OpenAPI 3.x import and draft manifest generation for GET operations.
-- `src/runtime.ts` — read-only HTTPS GET and restricted file MCP stdio runtime with URL/workspace allowlists, bounded outputs, optional JSON/CSV parsing, and bounded line-oriented search.
+- `src/runtime.ts` — read-only HTTPS GET and restricted file MCP stdio runtime with URL/workspace allowlists, bounded outputs, optional JSON/CSV parsing, bounded line-oriented search, and runtime validation of declared MCP output schemas.
 - `src/cli.ts` — manifest validation, tool listing, OpenAPI import, and stdio serving.
 - `schemas/connector.manifest.schema.json` — connector manifest schema.
 - `examples/openapi/sample-catalog.yaml` — OpenAPI generator fixture.
