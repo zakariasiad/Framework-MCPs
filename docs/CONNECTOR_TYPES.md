@@ -163,6 +163,7 @@ Current implementation:
 - Reads a manifest-declared relative path under an explicitly configured workspace root.
 - Supports a limited allowlist of text-like extensions.
 - Optional `operation.format: json` parses valid JSON; `operation.format: csv` maps CSV rows to objects using the first row as headers; the default is plain text.
+- `fileSearch` searches matching lines in approved text-like files, with a result cap, 500-file cap, byte scan budget, bounded snippets, and relative paths.
 - CSV parsing rejects empty/duplicate headers, inconsistent row widths, unterminated quoted fields, and more than 5000 data rows.
 - Blocks hidden paths, common credential-named files, and parent-directory traversal, checks resolved paths remain within the root, and enforces output-size limits.
 
