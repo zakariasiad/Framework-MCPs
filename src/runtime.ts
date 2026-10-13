@@ -1,4 +1,6 @@
 import { createRequire } from "node:module";
+import { readFile, realpath, stat } from "node:fs/promises";
+import { extname, isAbsolute, relative, resolve, sep } from "node:path";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
@@ -75,6 +77,97 @@ export function assertExecutableReadOnlyApiTool(manifest: ConnectorManifest, too
   if (!tool.risk.readOnly || tool.risk.destructive || tool.risk.requiresApproval) {
     throw new Error("This tool is not eligible for automatic execution; writes and approval-required tools are blocked by default.");
   }
+}
+
+export function assertExecutableReadOnlyFileTool(manifest: ConnectorManifest, tool: ConnectorTool): void {
+  if (manifest.adapter.type !== "file") throw new Error("This runtime supports only API and file connectors.");
+  if (tool.operation.type !== "fileRead") throw new Error("File connectors support only fileRead operations.");
+  if (!tool.risk.readOnly || tool.risk.destructive || tool.risk.requiresApproval) {
+    throw new Error("This file tool is not eligible for automatic execution.");
+  }
+  if (hasCredentialArgument(tool.inputSchema)) {
+    throw new Error("Credential-like fields are not allowed in model-visible tool arguments; configure a runtime secretRef instead.");
+  }
+  if (!Array.isArray(manifest.adapter.workspaceRoots) || manifest.adapter.workspaceRoots.length === 0) {
+    throw new Error("File connectors require at least one configured workspace root.");
+  }
+  if (typeof tool.operation.path !== "string" || !tool.operation.path.trim()) {
+    throw new Error("File read operations require a relative operation.path.");
+  }
+}
+
+function isWithinDirectory(root: string, target: string): boolean {
+  const pathFromRoot = relative(root, target);
+  return pathFromRoot === "" || (pathFromRoot !== ".." && !pathFromRoot.startsWith(`..${sep}`) && !isAbsolute(pathFromRoot));
+}
+
+function resolveFileTemplate(template: string, args: Record<string, unknown>): string {
+  if (template.startsWith("/") || template.startsWith("\\\\") || isAbsolute(template) || /^[A-Za-z]:/.test(template)) {
+    throw new Error("File paths must be relative to a configured workspace root.");
+  }
+  if (template.split(/[\\\\/]+/).includes("..")) throw new Error("File paths cannot contain parent-directory segments.");
+  const expanded = template.replace(/\\{([A-Za-z0-9_]+)\\}/g, (_match, key: string) => {
+    const value = args[key];
+    if (typeof value !== "string" && typeof value !== "number") {
+      throw new Error(`Missing or invalid file path parameter: ${key}`);
+    }
+    const segment = String(value);
+    if (!segment || segment === "." || segment === ".." || /[\\\\/\\u0000-\\u001f]/.test(segment) || /^[A-Za-z]:/.test(segment)) {
+      throw new Error(`Unsafe file path parameter: ${key}`);
+    }
+    return segment;
+  });
+  if (/\\{[^}]+\\}/.test(expanded)) throw new Error("File path contains an unresolved parameter.");
+  if (expanded.split(/[\\\\/]+/).some((segment) => segment.startsWith("."))) {
+    throw new Error("Hidden files and directories are blocked by default.");
+  }
+  const extension = extname(expanded).toLowerCase();
+  const allowedExtensions = new Set([".txt", ".md", ".json", ".csv", ".yaml", ".yml", ".xml", ".html", ".css", ".js", ".ts", ".py", ".ini", ".toml"]);
+  if (!allowedExtensions.has(extension)) throw new Error("This file type is not enabled for reading.");
+  return expanded;
+}
+
+export async function executeFileRead(
+  manifest: ConnectorManifest,
+  tool: ConnectorTool,
+  args: Record<string, unknown>,
+): Promise<string> {
+  assertExecutableReadOnlyFileTool(manifest, tool);
+  const template = tool.operation.path as string;
+  const relativePath = resolveFileTemplate(template, args);
+  const roots = manifest.adapter.workspaceRoots as string[];
+  const maxBytes = manifest.policy?.maxOutputBytes ?? 1048576;
+
+  for (const configuredRoot of roots) {
+    try {
+      const root = await realpath(resolve(configuredRoot));
+      if (!(await stat(root)).isDirectory()) continue;
+      const candidate = resolve(root, relativePath);
+      if (!isWithinDirectory(root, candidate)) continue;
+      const target = await realpath(candidate);
+      if (!isWithinDirectory(root, target)) continue;
+      const info = await stat(target);
+      if (!info.isFile()) continue;
+      if (info.size > maxBytes) throw new Error(`File exceeds the configured ${maxBytes}-byte output limit.`);
+      return await readFile(target, "utf8");
+    } catch (error) {
+      if (error instanceof Error && error.message.startsWith("File exceeds the configured")) throw error;
+      // Try the next explicitly configured root without exposing local paths.
+    }
+  }
+  throw new Error("Requested file was not found within the configured workspace roots.");
+}
+
+function assertExecutableTool(manifest: ConnectorManifest, tool: ConnectorTool): void {
+  if (manifest.adapter.type === "api") {
+    assertExecutableReadOnlyApiTool(manifest, tool);
+    return;
+  }
+  if (manifest.adapter.type === "file") {
+    assertExecutableReadOnlyFileTool(manifest, tool);
+    return;
+  }
+  throw new Error("This runtime currently supports only API and file connectors.");
 }
 
 export function resolveApiUrl(
@@ -205,7 +298,7 @@ export async function executeApiGet(
 export async function startStdioServer(manifestPath: string): Promise<void> {
   const manifest = await loadAndValidateManifest(manifestPath);
   // Refuse to publish tools whose policy or argument schema is not executable and safe.
-  for (const tool of manifest.tools) assertExecutableReadOnlyApiTool(manifest, tool);
+  for (const tool of manifest.tools) assertExecutableTool(manifest, tool);
   const server = new Server(
     { name: "framework-mcps", version: "0.1.0" },
     { capabilities: { tools: {} } },
@@ -230,7 +323,9 @@ export async function startStdioServer(manifestPath: string): Promise<void> {
       const args = (request.params.arguments ?? {}) as Record<string, unknown>;
       const validationError = validateArguments(tool.inputSchema, args);
       if (validationError) throw new Error(`Invalid tool arguments: ${validationError}`);
-      const result = await executeApiGet(manifest, tool, args);
+      const result = manifest.adapter.type === "file"
+        ? await executeFileRead(manifest, tool, args)
+        : await executeApiGet(manifest, tool, args);
       return {
         content: [{ type: "text" as const, text: typeof result === "string" ? result : JSON.stringify(result, null, 2) }],
       };
