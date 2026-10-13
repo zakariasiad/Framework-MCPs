@@ -171,24 +171,67 @@ function parseCsv(content: string): Array<Record<string, string>> {
   let row: string[] = [];
   let field = "";
   let quoted = false;
+  let afterQuote = false;
+
+  const finishRow = (): void => {
+    row.push(field);
+    if (row.some((cell) => cell.length > 0)) rows.push(row);
+    row = [];
+    field = "";
+    afterQuote = false;
+  };
+
   for (let i = 0; i < content.length; i += 1) {
     const char = content[i]!;
     if (quoted) {
       if (char === '"') {
-        if (content[i + 1] === '"') { field += '"'; i += 1; }
-        else quoted = false;
-      } else field += char;
-    } else if (char === '"' && field.length === 0) quoted = true;
-    else if (char === ',') { row.push(field); field = ""; }
-    else if (char === '\n' || char === '\r') {
-      if (char === '\r' && content[i + 1] === '\n') i += 1;
+        if (content[i + 1] === '"') {
+          field += '"';
+          i += 1;
+        } else {
+          quoted = false;
+          afterQuote = true;
+        }
+      } else {
+        field += char;
+      }
+      continue;
+    }
+
+    if (afterQuote) {
+      if (char === ",") {
+        row.push(field);
+        field = "";
+        afterQuote = false;
+      } else if (char === "\n" || char === "\r") {
+        if (char === "\r" && content[i + 1] === "\n") i += 1;
+        finishRow();
+      } else {
+        throw new Error("CSV file contains unexpected characters after a quoted field.");
+      }
+      continue;
+    }
+
+    if (char === '"' && field.length === 0) {
+      quoted = true;
+    } else if (char === '"') {
+      throw new Error("CSV file contains a quote inside an unquoted field.");
+    } else if (char === ",") {
       row.push(field);
-      if (row.some((cell) => cell.length > 0)) rows.push(row);
-      row = []; field = "";
-    } else field += char;
+      field = "";
+    } else if (char === "\n" || char === "\r") {
+      if (char === "\r" && content[i + 1] === "\n") i += 1;
+      finishRow();
+    } else {
+      field += char;
+    }
   }
+
   if (quoted) throw new Error("CSV file contains an unterminated quoted field.");
-  if (field.length > 0 || row.length > 0) { row.push(field); if (row.some((cell) => cell.length > 0)) rows.push(row); }
+  if (field.length > 0 || row.length > 0 || afterQuote) {
+    row.push(field);
+    if (row.some((cell) => cell.length > 0)) rows.push(row);
+  }
   if (rows.length === 0) return [];
   const headers = rows[0]!.map((header) => header.trim());
   if (headers.some((header) => !header)) throw new Error("CSV headers must be non-empty.");
@@ -196,7 +239,7 @@ function parseCsv(content: string): Array<Record<string, string>> {
   const dataRows = rows.slice(1);
   if (dataRows.length > 5000) throw new Error("CSV file exceeds the 5000-row parsing limit.");
   return dataRows.map((cells, index) => {
-    if (cells.length !== headers.length) throw new Error(`CSV row ${index + 2} has ${cells.length} columns; expected ${headers.length}.`);
+    if (cells.length !== headers.length) throw new Error("CSV row " + (index + 2) + " has " + cells.length + " columns; expected " + headers.length + ".");
     return Object.fromEntries(headers.map((header, column) => [header, cells[column]!]));
   });
 }
