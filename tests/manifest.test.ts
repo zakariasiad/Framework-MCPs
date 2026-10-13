@@ -93,4 +93,16 @@ describe("read-only API runtime policy", () => {
     const restricted = { ...manifest, adapter: { ...manifest.adapter, baseUrl: "https://example.org" } };
     expect(() => resolveApiUrl(restricted, manifest.tools[0]!, { owner: "x", repo: "y" })).toThrow(/allowedDomains/);
   });
+
+  it("adds declared query parameters without losing the configured origin", async () => {
+    const manifest = await exampleManifest();
+    const tool = {
+      ...manifest.tools[0]!,
+      operation: { ...manifest.tools[0]!.operation, query: { per_page: "limit", q: "query" } },
+    };
+    const url = resolveApiUrl(manifest, tool, { owner: "openai", repo: "sdk", limit: 10, query: "a b" });
+    expect(url.origin).toBe("https://api.github.com");
+    expect(url.searchParams.get("per_page")).toBe("10");
+    expect(url.searchParams.get("q")).toBe("a b");
+  });
 });
