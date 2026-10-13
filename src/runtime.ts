@@ -4,6 +4,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { ConnectorManifest } from "./manifest.js";
 import { loadAndValidateManifest } from "./manifest.js";
+import { createAuthHeaders } from "./secrets.js";
 
 type ConnectorTool = ConnectorManifest["tools"][number];
 type JsonSchemaValidator = ((value: unknown) => boolean) & {
@@ -39,8 +40,11 @@ function isBlockedDomain(hostname: string, blocked: string[]): boolean {
 
 export function assertExecutableReadOnlyApiTool(manifest: ConnectorManifest, tool: ConnectorTool): void {
   if (manifest.adapter.type !== "api") throw new Error("This runtime currently supports only API connectors.");
-  if (manifest.auth && manifest.auth.type !== "none") {
-    throw new Error("This runtime does not yet support authenticated connectors. Configure auth.type: none for this MVP.");
+  if (manifest.auth && !["none", "apiKey", "bearerToken"].includes(manifest.auth.type)) {
+    throw new Error("This runtime supports only none, apiKey, and bearerToken authentication.");
+  }
+  if (manifest.auth && manifest.auth.type !== "none" && !manifest.auth.secretRef) {
+    throw new Error("Authenticated connector requires a secretRef.");
   }
   if (tool.operation.type !== "http") throw new Error("This runtime supports only HTTP operations.");
   const method = String(tool.operation.method ?? "GET").toUpperCase();
@@ -148,7 +152,11 @@ async function executeApiGet(
   const maxOutputBytes = manifest.policy?.maxOutputBytes ?? 1048576;
   const response = await fetch(url, {
     method: "GET",
-    headers: { accept: "application/json, text/plain;q=0.9, */*;q=0.1", "user-agent": "Framework-MCPs/0.1.0" },
+    headers: {
+      accept: "application/json, text/plain;q=0.9, */*;q=0.1",
+      "user-agent": "Framework-MCPs/0.1.0",
+      ...createAuthHeaders(manifest.auth),
+    },
     signal: AbortSignal.timeout(timeoutMs),
     redirect: "error",
   });
