@@ -155,6 +155,12 @@ export function generateManifestFromOpenApi(
         continue;
       }
 
+      const operationSecurity = operation.security === undefined ? root.security : operation.security;
+      if (Array.isArray(operationSecurity) && operationSecurity.length > 0) {
+        warnings.push(`Skipped authenticated GET ${path}: authenticated execution is not implemented yet.`);
+        continue;
+      }
+
       const parameters = [
         ...pathParameters,
         ...(Array.isArray(operation.parameters) ? operation.parameters : []),
@@ -191,6 +197,9 @@ export function generateManifestFromOpenApi(
       }
 
       const name = operationName(operation, method, path);
+      if (tools.some((tool) => tool.name === name)) {
+        throw new Error(`Duplicate generated tool name "${name}". Set unique operationId values in the OpenAPI document.`);
+      }
       tools.push({
         name,
         title: (stringValue(operation.summary) ?? name).slice(0, 120),
