@@ -45,6 +45,7 @@ describe("MCP stdio smoke test", () => {
     expect(listed.tools.map((tool) => tool.name)).toContain("local_documents.read_lesson");
     const result = await client.callTool({ name: "local_documents.read_lesson", arguments: {} });
     expect(result.isError).not.toBe(true);
-    expect(result.content.some((item) => item.type === "text" && item.text.includes("sample document"))).toBe(true);
+    const returnedContent = result.content as Array<{ type: string; text?: string }>;
+    expect(returnedContent.some((item) => item.type === "text" && item.text?.includes("sample document"))).toBe(true);
   }, 15000);
 });
