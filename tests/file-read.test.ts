@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -52,6 +52,16 @@ describe("file-read adapter", () => {
     await expect(executeFileRead(traversal, traversal.tools[0]!, {})).rejects.toThrow();
     const hidden = await fixture(root, ".env");
     await expect(executeFileRead(hidden, hidden.tools[0]!, {})).rejects.toThrow(/Hidden files/);
+  });
+
+  it("does not follow symbolic links outside the workspace", async () => {
+    const root = await makeRoot();
+    const external = await makeRoot();
+    await writeFile(join(external, "external.md"), "external content", "utf8");
+    await symlink(join(external, "external.md"), join(root, "linked.md"));
+    const manifest = await fixture(root, "linked.md");
+    await expect(executeFileRead(manifest, manifest.tools[0]!, {}))
+      .rejects.toThrow(/not found within the configured workspace roots/);
   });
 
   it("blocks unsupported extensions and files over the configured limit", async () => {
