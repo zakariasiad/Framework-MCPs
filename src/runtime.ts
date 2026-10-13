@@ -4,7 +4,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { ConnectorManifest } from "./manifest.js";
 import { loadAndValidateManifest } from "./manifest.js";
-import { createAuthHeaders } from "./secrets.js";
+import { createAuthHeaders, redactSecretValues } from "./secrets.js";
 
 type ConnectorTool = ConnectorManifest["tools"][number];
 type JsonSchemaValidator = ((value: unknown) => boolean) & {
@@ -150,18 +150,21 @@ async function executeApiGet(
   const url = resolveApiUrl(manifest, tool, args);
   const timeoutMs = manifest.policy?.timeoutMs ?? 30000;
   const maxOutputBytes = manifest.policy?.maxOutputBytes ?? 1048576;
+  const authHeaders = createAuthHeaders(manifest.auth);
+  const redactionValues = Object.values(authHeaders).flatMap((value) => [value, value.replace(/^Bearer\\s+/i, "")]);
   const response = await fetch(url, {
     method: "GET",
     headers: {
       accept: "application/json, text/plain;q=0.9, */*;q=0.1",
       "user-agent": "Framework-MCPs/0.1.0",
-      ...createAuthHeaders(manifest.auth),
+      ...authHeaders,
     },
     signal: AbortSignal.timeout(timeoutMs),
     redirect: "error",
   });
   if (!response.ok) throw new Error(`Upstream API returned HTTP ${response.status}.`);
-  const body = await readLimitedBody(response, maxOutputBytes);
+  const rawBody = await readLimitedBody(response, maxOutputBytes);
+  const body = redactSecretValues(rawBody, redactionValues);
   const contentType = response.headers.get("content-type") ?? "";
   if (contentType.includes("application/json")) {
     try {
