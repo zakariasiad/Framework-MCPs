@@ -97,7 +97,8 @@ Deliverables:
 
 - [x] Restricted read-only file adapter for approved text-like extensions.
 - [x] Workspace-root enforcement, traversal and hidden-file blocking, real-path containment, and output limits.
-- [ ] Structured CSV/JSON parsing and controlled file search.
+- [x] Structured CSV/JSON parsing with CSV row/header validation and a row cap.
+- [ ] Controlled file search.
 - [ ] Optional write support behind policy approval.
 - [ ] SQL adapter using query templates, not arbitrary model-generated SQL by default.
 - [ ] Database connection secret handling.
@@ -114,8 +115,8 @@ Deliverables:
 
 - [x] Unit tests for manifest validation and OpenAPI generation.
 - [x] API auth, output redaction, allowlist, and path policy tests.
-- [x] File-read tests for traversal, hidden files, extensions, and output limits.
-- [x] MCP stdio client smoke test.
+- [x] File-read tests for traversal, hidden files, extensions, output limits, structured parsing, and symlink containment.
+- [x] MCP stdio client smoke tests for API and file adapters.
 - [ ] Broader adapter contract tests and recorded HTTP tests.
 - [ ] Browser workflow tests against local fixtures.
 - [ ] Security tests for blocked commands and approval enforcement.
