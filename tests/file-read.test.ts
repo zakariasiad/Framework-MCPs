@@ -77,6 +77,32 @@ describe("file-read adapter", () => {
       .rejects.toThrow(/at least one configured workspace root/);
   });
 
+  it("parses JSON and CSV into bounded structured JSON output", async () => {
+    const root = await makeRoot();
+    await writeFile(join(root, "data.json"), '{"items":[1,2]}', "utf8");
+    const jsonManifest = await fixture(root, "data.json");
+    jsonManifest.tools[0]!.operation.format = "json";
+    await expect(executeFileRead(jsonManifest, jsonManifest.tools[0]!, {}))
+      .resolves.toBe(JSON.stringify({ items: [1, 2] }, null, 2));
+
+    await writeFile(join(root, "people.csv"), 'name,note\nAlice,"hello, world"\nBob,"said ""hi"""\n', "utf8");
+    const csvManifest = await fixture(root, "people.csv");
+    csvManifest.tools[0]!.operation.format = "csv";
+    const parsed = await executeFileRead(csvManifest, csvManifest.tools[0]!, {});
+    expect(JSON.parse(parsed)).toEqual([
+      { name: "Alice", note: "hello, world" },
+      { name: "Bob", note: 'said "hi"' },
+    ]);
+  });
+
+  it("rejects malformed structured files with a safe error", async () => {
+    const root = await makeRoot();
+    await writeFile(join(root, "bad.csv"), "name,age\nAlice\n", "utf8");
+    const manifest = await fixture(root, "bad.csv");
+    manifest.tools[0]!.operation.format = "csv";
+    await expect(executeFileRead(manifest, manifest.tools[0]!, {})).rejects.toThrow(/expected 2/);
+  });
+
   it("blocks unsupported extensions and files over the configured limit", async () => {
     const root = await makeRoot();
     await writeFile(join(root, "payload.bin"), "data", "utf8");
