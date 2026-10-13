@@ -161,6 +161,7 @@ The CLI supports manifest validation, listing declared tools, importing OpenAPI,
 
 ```bash
 npm run dev -- validate examples/connectors/public-http-api.yaml
+npm run dev -- validate examples/connectors/bearer-token-api.yaml
 npm run dev -- list-tools examples/connectors/public-http-api.yaml
 npm run dev -- serve examples/connectors/public-http-api.yaml
 npm run dev -- import-openapi examples/openapi/sample-catalog.yaml generated/catalog.yaml
@@ -168,7 +169,7 @@ npm run dev -- import-openapi examples/openapi/sample-catalog.yaml generated/cat
 
 The OpenAPI importer supports OpenAPI 3.x documents with a root HTTPS server URL and emits draft manifests for unauthenticated GET operations. It resolves local component references, creates path/query input schemas, and warns when non-GET or authenticated operations are skipped. Duplicate generated tool names are rejected. Review every generated manifest before use. External references and advanced OpenAPI serialization rules are not supported.
 
-The stdio runtime can execute allowlisted HTTPS GET operations for API connectors with `auth.type: none`, `auth.type: apiKey`, or `auth.type: bearerToken`. For authenticated connectors, set `secretRef` to `env:VARIABLE_NAME` and configure that variable in the runtime process. API keys use `x-api-key`; bearer tokens use the `Authorization` header. Secret values are not tool arguments, missing secrets fail closed, and known credentials are redacted from upstream response text. OAuth, browser sessions, database credentials, write operations, browser/CLI/database/file adapters, hosted HTTP transport, and a full approval UI are not implemented yet. Risky operations are blocked rather than silently executed. Do not put real credentials in example manifests.
+The stdio runtime can execute allowlisted HTTPS GET operations for API connectors with `auth.type: none`, `auth.type: apiKey`, or `auth.type: bearerToken`. See `examples/connectors/bearer-token-api.yaml` for a placeholder template; it targets `api.example.com` and will not work until replaced with an authorized API host and a runtime environment variable. For authenticated connectors, set `secretRef` to `env:VARIABLE_NAME` and configure that variable in the runtime process. API keys use `x-api-key`; bearer tokens use the `Authorization` header. Secret values are not tool arguments, missing secrets fail closed, and known credentials are redacted from upstream response text. OAuth, browser sessions, database credentials, write operations, browser/CLI/database/file adapters, hosted HTTP transport, and a full approval UI are not implemented yet. Risky operations are blocked rather than silently executed. Do not put real credentials in example manifests.
 
 At this stage, also review the schema, examples, and design documents:
 
