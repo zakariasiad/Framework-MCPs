@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { loadAndValidateManifest } from "./manifest.js";
+import { startStdioServer } from "./runtime.js";
 
 function usage(): void {
   console.log(`Framework-MCPs — connector manifest tools
@@ -7,11 +8,13 @@ function usage(): void {
 Usage:
   fmcp validate <manifest.json|manifest.yaml>
   fmcp list-tools <manifest.json|manifest.yaml>
+  fmcp serve <manifest.json|manifest.yaml>
   fmcp --help
 
 Commands:
   validate    Parse and validate a connector manifest against the project schema.
   list-tools  Validate a manifest and print the tool names and risk levels.
+  serve       Start the read-only HTTP MCP server over stdio.
 `);
 }
 
@@ -21,7 +24,7 @@ async function main(): Promise<void> {
     usage();
     return;
   }
-  if (!["validate", "list-tools"].includes(command)) {
+  if (!["validate", "list-tools", "serve"].includes(command)) {
     console.error(`Unknown command: ${command}\n`);
     usage();
     process.exitCode = 2;
@@ -35,6 +38,10 @@ async function main(): Promise<void> {
   }
 
   try {
+    if (command === "serve") {
+      await startStdioServer(file);
+      return;
+    }
     const manifest = await loadAndValidateManifest(file);
     if (command === "validate") {
       console.log(`✓ Valid connector manifest: ${manifest.id} (${manifest.name})`);
