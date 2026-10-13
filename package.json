@@ -1,7 +1,7 @@
 {
   "name": "framework-mcps",
   "version": "0.1.0",
-  "description": "Manifest-driven framework for building safe MCP connectors for APIs, browsers, CLIs, databases, and files.",
+  "description": "Manifest-driven MCP framework for turning authorized APIs, websites, CLIs, databases, and files into secure, reusable AI tools.",
   "type": "module",
   "license": "MIT",
   "private": false,
@@ -25,10 +25,19 @@
   "keywords": [
     "mcp",
     "model-context-protocol",
-    "connectors",
-    "automation",
+    "mcp-server",
+    "mcp-framework",
+    "ai-agents",
+    "connector-framework",
+    "api-integration",
+    "openapi",
+    "browser-automation",
     "playwright",
-    "openapi"
+    "cli",
+    "database",
+    "json-schema",
+    "automation",
+    "security"
   ],
   "dependencies": {
     "@modelcontextprotocol/server": "^2.0.0",
