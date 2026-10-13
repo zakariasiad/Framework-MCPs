@@ -87,7 +87,7 @@ export function resolveApiUrl(
     if (segment === "." || segment === ".." || segment.includes("\\")) {
       throw new Error(`Unsafe path parameter: ${key}`);
     }
-    return encodeURIComponent(segment).replace(/\\./g, "%2E");
+    return encodeURIComponent(segment);
   });
   if (/\{[^}]+\}/.test(path)) throw new Error("HTTP operation contains an unresolved path parameter.");
 
