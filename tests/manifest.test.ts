@@ -125,6 +125,22 @@ describe("read-only API runtime policy", () => {
     expect(() => assertExecutableReadOnlyApiTool(authenticated, manifest.tools[0]!)).not.toThrow();
   });
 
+  it("rejects credential-like fields in model-visible tool arguments", async () => {
+    const manifest = await exampleManifest();
+    const unsafeTool = {
+      ...manifest.tools[0]!,
+      inputSchema: {
+        type: "object",
+        properties: {
+          owner: { type: "string" },
+          access_token: { type: "string" },
+        },
+      },
+    };
+    expect(() => assertExecutableReadOnlyApiTool(manifest, unsafeTool))
+      .toThrow(/Credential-like fields are not allowed/);
+  });
+
   it("still blocks unsupported authentication types", async () => {
     const manifest = await exampleManifest();
     const unsupported = { ...manifest, auth: { type: "oauth2", secretRef: "env:API_TOKEN" } };
