@@ -83,7 +83,7 @@ Framework-MCPs is designed around a deny-by-default model:
 
 The framework must not bypass authentication, CAPTCHA, paywalls, 2FA, access controls, or a target site's technical restrictions. It must not access data without authorization or execute arbitrary shell commands without policy checks.
 
-See [Security Model](docs/SECURITY_MODEL.md) and [Authentication and Secrets](docs/AUTH_SECRETS.md).
+See [Security Model](docs/SECURITY_MODEL.md), [Runtime Security and Execution Policy](docs/SECURITY_POLICY.md), and [Authentication and Secrets](docs/AUTH_SECRETS.md).
 
 ## Current repository contents
 
@@ -101,6 +101,7 @@ See [Security Model](docs/SECURITY_MODEL.md) and [Authentication and Secrets](do
 - `docs/TOOL_SCHEMA_GENERATION.md` — schema-generation design.
 - `docs/AUTH_SECRETS.md` — authentication and secret handling.
 - `docs/SECURITY_MODEL.md` — policy and security boundaries.
+- `docs/SECURITY_POLICY.md` — current runtime enforcement matrix, approval behavior, and unimplemented security controls.
 - `docs/TESTING.md` — testing strategy.
 - `docs/RUNTIME_DEPLOYMENT.md` — runtime and deployment design.
 - `docs/FEASIBILITY.md` — feasibility, constraints, and limitations.
